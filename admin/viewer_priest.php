@@ -1,9 +1,10 @@
 <?php
 session_start();
-include 'db_connection.php'; 
+include 'db_connection.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,6 +20,7 @@ include 'db_connection.php';
     <script src="scriptd.js"></script>
     <script src="viewer_calendar.js"></script>
 </head>
+
 <body id="bodyTag">
     <header class="header" id="header">
         <div class="header_toggle">
@@ -26,114 +28,119 @@ include 'db_connection.php';
         </div>
     </header>
     <?php include 'viewer_sidebar.php'; ?><br>
-    <div class="admin-greeting">Good Day, Viewer!</div>
-    <div id="datetime" class="datetime"></div> 
+    <div class="admin-greeting">Good Day, <?php echo $_SESSION['username'] ?> !</div>
+    <div id="datetime" class="datetime"></div>
     <section class="about-us">
-    <h2>Priest Schedule</h2>
-    <p class="justified">
-    You can only view the Priest Schedule. This section provides information about the priest’s availability for parish events and services. While the default schedule assumes daily availability, specific dates may be marked as unavailable. However, you do not have permission to modify or update the schedule.
-    </p>
-</section>
+        <h2>Priest Schedule</h2>
+        <p class="justified">
+            You can only view the Priest Schedule. This section provides information about the priest’s availability for
+            parish events and services. While the default schedule assumes daily availability, specific dates may be
+            marked as unavailable. However, you do not have permission to modify or update the schedule.
+        </p>
+    </section>
 
 
-<section class="about-us">
-    <table border="1" id="priest-table">
-        <thead>
-            <tr>
-                <th>Priest Name</th>
-            </tr>
-        </thead>
-        <tbody>
-        </tbody>
-    </table>
-    <br>
+    <section class="about-us">
+        <table border="1" id="priest-table">
+            <thead>
+                <tr>
+                    <th>Priest Name</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        <br>
 
-    <button id="prev-month">◀</button>
-    <span id="month-year"></span>
-    <button id="next-month">▶</button>
-    <table>
-        <thead>
-            <tr>
-                <th>Sun</th>
-                <th>Mon</th>
-                <th>Tue</th>
-                <th>Wed</th>
-                <th>Thu</th>
-                <th>Fri</th>
-                <th>Sat</th>
-            </tr>
-        </thead>
-        <tbody id="calendar"></tbody>
-    </table>
-</section>
-</div>
+        <button id="prev-month">◀</button>
+        <span id="month-year"></span>
+        <button id="next-month">▶</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>Sun</th>
+                    <th>Mon</th>
+                    <th>Tue</th>
+                    <th>Wed</th>
+                    <th>Thu</th>
+                    <th>Fri</th>
+                    <th>Sat</th>
+                </tr>
+            </thead>
+            <tbody id="calendar"></tbody>
+        </table>
+    </section>
+    </div>
 
 
 
     <footer>
-    <div class="footer-container">
-        <div class="footer-about">
-        <h3>About Parish of the Holy Cross</h3>
-            <p>
-                The Parish of the Holy Cross is a sacred place of worship, where the community comes together to celebrate faith, hope, and love. Whether you're seeking spiritual growth, a peaceful moment of reflection, or a place to connect with others, our church provides a welcoming environment for all.
-            </p>
+        <div class="footer-container">
+            <div class="footer-about">
+                <h3>About Parish of the Holy Cross</h3>
+                <p>
+                    The Parish of the Holy Cross is a sacred place of worship, where the community comes together to
+                    celebrate faith, hope, and love. Whether you're seeking spiritual growth, a peaceful moment of
+                    reflection, or a place to connect with others, our church provides a welcoming environment for all.
+                </p>
 
+            </div>
+            <div class="footer-contact">
+                <h3>Contact Us</h3>
+                <p>Email: holycrossparish127@yahoo.com</p>
+                <p>Phone: 28671581</p>
+                <p>Address: Gen. T. De Leon, Valenzuela, Philippines, 1442 </p>
+            </div>
+            <div class="footer-socials">
+                <h3>Follow Us</h3>
+                <a href="https://www.facebook.com/ParishoftheHolyCrossValenzuelaCityOfficial/">Facebook</a>
+            </div>
         </div>
-        <div class="footer-contact">
-            <h3>Contact Us</h3>
-            <p>Email: holycrossparish127@yahoo.com</p>
-            <p>Phone: 28671581</p>
-            <p>Address: Gen. T. De Leon, Valenzuela, Philippines, 1442 </p>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Parish of the Holy Cross. All rights reserved.</p>
         </div>
-        <div class="footer-socials">
-            <h3>Follow Us</h3>
-            <a href="https://www.facebook.com/ParishoftheHolyCrossValenzuelaCityOfficial/">Facebook</a>
-        </div>
-    </div>
-    <div class="footer-bottom">
-        <p>&copy; 2025 Parish of the Holy Cross. All rights reserved.</p>
-    </div>
-</footer>
+    </footer>
 
 
-<script>
-<?php if (!empty($alertMessage)) echo $alertMessage; ?>
+    <script>
+        <?php if (!empty($alertMessage))
+            echo $alertMessage; ?>
 
-function updateDateTime() {
-    let now = new Date();
-    let options = { timeZone: 'Asia/Manila', hour12: true, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-    document.getElementById('datetime').innerHTML = new Intl.DateTimeFormat('en-PH', options).format(now);
-}
+        function updateDateTime() {
+            let now = new Date();
+            let options = { timeZone: 'Asia/Manila', hour12: true, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            document.getElementById('datetime').innerHTML = new Intl.DateTimeFormat('en-PH', options).format(now);
+        }
 
-updateDateTime();
-setInterval(updateDateTime, 60000); 
+        updateDateTime();
+        setInterval(updateDateTime, 60000);
 
-</script>
+    </script>
 
-<script>
-    function loadPriests() {
-        fetch("schedule.php?action=getPriests")
-            .then(response => response.json())
-            .then(data => {
-                let tableBody = document.querySelector("#priest-table tbody");
-                tableBody.innerHTML = "";
+    <script>
+        function loadPriests() {
+            fetch("schedule.php?action=getPriests")
+                .then(response => response.json())
+                .then(data => {
+                    let tableBody = document.querySelector("#priest-table tbody");
+                    tableBody.innerHTML = "";
 
-                data.priests.forEach(priest => {
-                    let row = `<tr>
+                    data.priests.forEach(priest => {
+                        let row = `<tr>
                         <td>${priest}</td>
                     </tr>`;
-                    tableBody.innerHTML += row;
+                        tableBody.innerHTML += row;
+                    });
                 });
-            });
-    }
+        }
 
 
-    loadPriests();
+        loadPriests();
 
     </script>
 
 
-<style>
+    <style>
         .calendar-container {
             background: white;
             max-width: 700px;
@@ -143,7 +150,8 @@ setInterval(updateDateTime, 60000);
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
 
-        #prev-month, #next-month {
+        #prev-month,
+        #next-month {
             background: #2c3e50;
             color: white;
             border: none;
@@ -155,7 +163,8 @@ setInterval(updateDateTime, 60000);
             transition: 0.3s;
         }
 
-        #prev-month:hover, #next-month:hover {
+        #prev-month:hover,
+        #next-month:hover {
             background: #1a252f;
         }
 
@@ -171,7 +180,8 @@ setInterval(updateDateTime, 60000);
             margin-top: 10px;
         }
 
-        th, td {
+        th,
+        td {
             padding: 15px;
             text-align: center;
             border: 1px solid #ddd;
@@ -197,7 +207,7 @@ setInterval(updateDateTime, 60000);
         }
 
         .calendar-day[style*="background-color: green"] {
-            background:rgb(29, 124, 69) !important;
+            background: rgb(29, 124, 69) !important;
             color: white;
         }
 
@@ -233,7 +243,7 @@ setInterval(updateDateTime, 60000);
 
         body {
             font-family: Arial, sans-serif;
-            background-color: rgb(241, 243, 240); 
+            background-color: rgb(241, 243, 240);
         }
 
         table {
@@ -242,7 +252,8 @@ setInterval(updateDateTime, 60000);
             text-align: center;
         }
 
-        th, td {
+        th,
+        td {
             padding: 10px;
             border: 1px solid #ddd;
         }
@@ -273,7 +284,7 @@ setInterval(updateDateTime, 60000);
         button:hover {
             background: #1a252f;
         }
-        
+
         #priest-table {
             width: 80%;
             margin: auto;
@@ -356,7 +367,7 @@ setInterval(updateDateTime, 60000);
         button:hover {
             background: #1a252f;
         }
-
     </style>
 </body>
+
 </html>

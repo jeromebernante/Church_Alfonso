@@ -1,7 +1,7 @@
 <?php
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
-
+session_start();
 include 'db_connection.php';
 
 $query = "
@@ -57,10 +57,12 @@ if (empty($ratesData)) {
 
 $conn->close();
 $ratesDataJSON = json_encode($ratesData);
+
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -73,6 +75,7 @@ $ratesDataJSON = json_encode($ratesData);
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="scriptd.js"></script>
 </head>
+
 <body id="bodyTag">
     <header class="header" id="header">
         <div class="header_toggle">
@@ -80,13 +83,14 @@ $ratesDataJSON = json_encode($ratesData);
         </div>
     </header>
     <?php include 'viewer_sidebar.php'; ?><br>
-    <div class="admin-greeting">Good Day, Viewer!</div>
-    <div id="datetime" class="datetime"></div> 
+    <div class="admin-greeting">Good Day, <?php echo $_SESSION['username'] ?>!</div>
+    <div id="datetime" class="datetime"></div>
 
     <section class="about-us">
         <h2 style="color: black; font-size: 20px;">Your Dashboard</h2>
         <p class="justified">
-            The Dashboard allows you to access and review detailed records of service reservations and church events. Stay informed and keep track of essential parish data efficiently.
+            The Dashboard allows you to access and review detailed records of service reservations and church events.
+            Stay informed and keep track of essential parish data efficiently.
         </p>
     </section>
 
@@ -100,10 +104,12 @@ $ratesDataJSON = json_encode($ratesData);
     <section class="about-us">
         <h2 style="color: black; font-size: 20px; margin-top: 15px;">Service Rates</h2>
         <p class="justified">
-            The Service Rates section displays the pricing for different church services, such as <b>Baptism, Wedding, Blessings, and Pamisa</b>. These rates help parishioners understand the associated costs before making a reservation.
+            The Service Rates section displays the pricing for different church services, such as <b>Baptism, Wedding,
+                Blessings, and Pamisa</b>. These rates help parishioners understand the associated costs before making a
+            reservation.
         </p>
     </section>
-    
+
     <table>
         <thead>
             <tr>
@@ -172,29 +178,31 @@ $ratesDataJSON = json_encode($ratesData);
 
 
     <footer>
-    <div class="footer-container">
-        <div class="footer-about">
-        <h3>About Parish of the Holy Cross</h3>
-            <p>
-                The Parish of the Holy Cross is a sacred place of worship, where the community comes together to celebrate faith, hope, and love. Whether you're seeking spiritual growth, a peaceful moment of reflection, or a place to connect with others, our church provides a welcoming environment for all.
-            </p>
+        <div class="footer-container">
+            <div class="footer-about">
+                <h3>About Parish of the Holy Cross</h3>
+                <p>
+                    The Parish of the Holy Cross is a sacred place of worship, where the community comes together to
+                    celebrate faith, hope, and love. Whether you're seeking spiritual growth, a peaceful moment of
+                    reflection, or a place to connect with others, our church provides a welcoming environment for all.
+                </p>
 
+            </div>
+            <div class="footer-contact">
+                <h3>Contact Us</h3>
+                <p>Email: holycrossparish127@yahoo.com</p>
+                <p>Phone: 28671581</p>
+                <p>Address: Gen. T. De Leon, Valenzuela, Philippines, 1442 </p>
+            </div>
+            <div class="footer-socials">
+                <h3>Follow Us</h3>
+                <a href="https://www.facebook.com/ParishoftheHolyCrossValenzuelaCityOfficial/">Facebook</a>
+            </div>
         </div>
-        <div class="footer-contact">
-            <h3>Contact Us</h3>
-            <p>Email: holycrossparish127@yahoo.com</p>
-            <p>Phone: 28671581</p>
-            <p>Address: Gen. T. De Leon, Valenzuela, Philippines, 1442 </p>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Parish of the Holy Cross. All rights reserved.</p>
         </div>
-        <div class="footer-socials">
-            <h3>Follow Us</h3>
-            <a href="https://www.facebook.com/ParishoftheHolyCrossValenzuelaCityOfficial/">Facebook</a>
-        </div>
-    </div>
-    <div class="footer-bottom">
-        <p>&copy; 2025 Parish of the Holy Cross. All rights reserved.</p>
-    </div>
-</footer>
+    </footer>
 
 
 
@@ -206,20 +214,21 @@ $ratesDataJSON = json_encode($ratesData);
 
 
 
-<script>
-<?php if (!empty($alertMessage)) echo $alertMessage; ?>
+    <script>
+        <?php if (!empty($alertMessage))
+            echo $alertMessage; ?>
 
-function updateDateTime() {
-    let now = new Date();
-    let options = { timeZone: 'Asia/Manila', hour12: true, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-    document.getElementById('datetime').innerHTML = new Intl.DateTimeFormat('en-PH', options).format(now);
-}
+        function updateDateTime() {
+            let now = new Date();
+            let options = { timeZone: 'Asia/Manila', hour12: true, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            document.getElementById('datetime').innerHTML = new Intl.DateTimeFormat('en-PH', options).format(now);
+        }
 
-updateDateTime();
-setInterval(updateDateTime, 60000); 
+        updateDateTime();
+        setInterval(updateDateTime, 60000);
 
-</script>
-<style>
+    </script>
+    <style>
         .header {
             background: #2c3e50;
             color: white;
@@ -242,81 +251,84 @@ setInterval(updateDateTime, 60000);
 
         body {
             font-family: Arial, sans-serif;
-            background-color: rgb(241, 243, 240); 
+            background-color: rgb(241, 243, 240);
         }
 
         /* Centering the table */
-table {
-    width: 70%; /* Adjust width */
-    margin: 30px auto; /* Centering */
-    border-collapse: collapse;
-    font-family: 'Poppins', sans-serif;
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
-}
+        table {
+            width: 70%;
+            /* Adjust width */
+            margin: 30px auto;
+            /* Centering */
+            border-collapse: collapse;
+            font-family: 'Poppins', sans-serif;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
+        }
 
-/* Header Row Styling */
-th {
-    background: #3498db;
-    color: white;
-    font-size: 18px;
-    padding: 14px;
-    text-align: center;
-}
+        /* Header Row Styling */
+        th {
+            background: #3498db;
+            color: white;
+            font-size: 18px;
+            padding: 14px;
+            text-align: center;
+        }
 
-/* Table Body Styling */
-td {
-    padding: 12px;
-    text-align: center;
-    font-size: 16px;
-    border-bottom: 1px solid #ddd;
-}
+        /* Table Body Styling */
+        td {
+            padding: 12px;
+            text-align: center;
+            font-size: 16px;
+            border-bottom: 1px solid #ddd;
+        }
 
-/* Alternating row colors */
-tr:nth-child(even) {
-    background: #f8f9fa;
-}
-tr:nth-child(odd) {
-    background: #ffffff;
-}
+        /* Alternating row colors */
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
 
-/* Hover effect */
-tr:hover {
-    background: #e3f2fd;
-    transition: 0.3s;
-}
+        tr:nth-child(odd) {
+            background: #ffffff;
+        }
 
-/* Button styling */
-button {
-    background: #2ecc71;
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    cursor: pointer;
-    border-radius: 6px;
-    font-size: 14px;
-    transition: 0.3s;
-}
+        /* Hover effect */
+        tr:hover {
+            background: #e3f2fd;
+            transition: 0.3s;
+        }
 
-button:hover {
-    background: #27ae60;
-    transform: scale(1.05);
-}
+        /* Button styling */
+        button {
+            background: #2ecc71;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: 0.3s;
+        }
 
-/* Editable fields style */
-td[contenteditable="true"] {
-    background: #f0f8ff;
-    outline: none;
-    transition: 0.3s;
-}
-td[contenteditable="true"]:focus {
-    background: #d9edf7;
-    border: 1px solid #3498db;
-}
+        button:hover {
+            background: #27ae60;
+            transform: scale(1.05);
+        }
 
+        /* Editable fields style */
+        td[contenteditable="true"] {
+            background: #f0f8ff;
+            outline: none;
+            transition: 0.3s;
+        }
 
+        td[contenteditable="true"]:focus {
+            background: #d9edf7;
+            border: 1px solid #3498db;
+        }
     </style>
 </body>
+
 </html>

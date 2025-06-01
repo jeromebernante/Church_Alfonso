@@ -163,10 +163,29 @@ $stmt_notif->close();
                     <div class="modal-content">
                         <span class="close">&times;</span>
                         <h2>Wedding Service</h2>
-                        <p style="color: red; font-weight: bold; font-size: 15px;"> You are allowed to set a wedding
-                            request at least 3 months after the seminar. </p>
-                        <p style="color: black; font-size: 15px;"> Payment for Wedding is P7,000.00</p>
-                        <p style="color: black; font-size: 15px;"> GCash Account : CH***** AL***** - 09457745210</p>
+                        <p style="color: red; font-weight: bold; font-size: 15px;">⚠️ You are allowed to set a wedding
+                            request at least 3 months after the seminar.</p>
+
+                        <div
+                            style="border: 1px solid #ccc; border-radius: 10px; padding: 15px; background-color: #f9f9f9; margin-bottom: 20px;">
+                            <h3 style="margin-top: 0; color: #333;">💒 Wedding Payment Information</h3>
+
+                            <p style="font-size: 16px; font-weight: bold; color: #000;">💰 Amount: <span
+                                    style="color: #4CAF50;">₱7,000.00</span></p>
+
+                            <p style="font-size: 15px; color: #000;">📱 GCash Account Name: <strong>CH*****
+                                    AL*****</strong><br>
+                                📞 GCash Number: <strong>0991 189 5057</strong></p>
+
+                            <div style="text-align: center; margin: 10px 0;">
+                                <img src="./imgs/qr.png" alt="GCash QR Code"
+                                    style="max-width: 200px; border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.1);">
+                            </div>
+
+                            <p style="font-size: 14px; color: #666; font-style: italic;">* Please upload a screenshot of
+                                your GCash payment receipt below to confirm your booking.</p>
+                        </div>
+
                         <br>
 
                         <!-- Wedding Form -->
@@ -187,11 +206,11 @@ $stmt_notif->close();
 
                                 if (mysqli_num_rows($select_priest) > 0) {
                                     while ($row = mysqli_fetch_assoc($select_priest)) {
-                                ?>
+                                        ?>
 
                                         <option value="<?php echo $row['name'] ?>"><?php echo $row['name'] ?></option>
 
-                                <?php
+                                        <?php
                                     }
                                 }
                                 ?>
@@ -235,15 +254,15 @@ $stmt_notif->close();
                 </div>
 
                 <script>
-                    document.getElementById("weddingForm").addEventListener("submit", function(event) {
+                    document.getElementById("weddingForm").addEventListener("submit", function (event) {
                         event.preventDefault();
 
                         let formData = new FormData(this);
 
                         fetch("wedding_request.php", {
-                                method: "POST",
-                                body: formData
-                            })
+                            method: "POST",
+                            body: formData
+                        })
                             .then(response => response.json())
                             .then(data => {
                                 if (data.status === "success") {
@@ -260,26 +279,26 @@ $stmt_notif->close();
                 </script>
 
                 <script>
-                    document.getElementById("wedding").addEventListener("click", function() {
+                    document.getElementById("wedding").addEventListener("click", function () {
                         document.getElementById("weddingModal").style.display = "flex";
                     });
 
-                    document.querySelector(".close").addEventListener("click", function() {
+                    document.querySelector(".close").addEventListener("click", function () {
                         document.getElementById("weddingModal").style.display = "none";
                     });
 
-                    document.getElementById("closeModalBtn").addEventListener("click", function() {
+                    document.getElementById("closeModalBtn").addEventListener("click", function () {
                         document.getElementById("weddingModal").style.display = "none";
                     });
 
-                    window.addEventListener("click", function(event) {
+                    window.addEventListener("click", function (event) {
                         let modal = document.getElementById("weddingModal");
                         if (event.target === modal) {
                             modal.style.display = "none";
                         }
                     });
 
-                    document.getElementById("weddingDate").addEventListener("input", function() {
+                    document.getElementById("weddingDate").addEventListener("input", function () {
                         let selectedDate = new Date(this.value);
                         let minDate = new Date();
                         minDate.setMonth(minDate.getMonth() + 3);
@@ -295,7 +314,7 @@ $stmt_notif->close();
                         }
                     });
 
-                    document.getElementById("gcashReceipt").addEventListener("change", function() {
+                    document.getElementById("gcashReceipt").addEventListener("change", function () {
                         let file = this.files[0];
                         let allowedExtensions = ["image/png", "image/jpeg", "image/jpg"];
 
@@ -310,7 +329,7 @@ $stmt_notif->close();
                         }
                     });
 
-                    document.getElementById("weddingForm").addEventListener("submit", function(event) {
+                    document.getElementById("weddingForm").addEventListener("submit", function (event) {
                         event.preventDefault();
 
                         let brideName = document.getElementById("brideName").value.trim();
@@ -434,6 +453,7 @@ $stmt_notif->close();
 
                     <!-- Blessing Form -->
                     <form id="blessing-form" style="display: none; margin-top: 20px;">
+                        <!-- Time Select -->
                         <label for="blessing-time" style="font-weight: bold; margin-bottom: 5px;">Time:</label>
                         <select id="blessing-time" name="blessing_time" class="dropdown-field" required
                             style="width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
@@ -443,15 +463,17 @@ $stmt_notif->close();
                             <option value="3:00PM">3:00PM</option>
                         </select>
 
+                        <!-- Name of Blessed -->
                         <label for="name-of-blessed" style="font-weight: bold; margin-bottom: 5px;">Pangalan ng
                             Ipapabless:</label>
                         <input type="text" id="name-of-blessed" name="name_of_blessed" class="input-field"
                             placeholder="Enter name" required
                             style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
 
-                        <label for="">Select Priest: <br></label>
-
-                        <select name="priest_name" id="priest_name" style="padding:10px">
+                        <!-- Priest Select -->
+                        <label for="priest_name">Select Priest: <br></label>
+                        <select name="priest_name" id="priest_name"
+                            style="padding:10px; width: 100%; margin-bottom: 15px;">
                             <option value="" selected disabled>Select Priest</option>
                             <?php
                             $select_priest = mysqli_query($conn, 'SELECT * FROM priests');
@@ -465,15 +487,14 @@ $stmt_notif->close();
                             ?>
                         </select>
 
-
-                        <br>
-
+                        <!-- Requestor Name -->
                         <label for="name-of-requestor-blessing" style="font-weight: bold; margin-bottom: 5px;">Pangalan
                             ng Nagpabless:</label>
                         <input type="text" id="name-of-requestor-blessing" name="name_of_requestor" class="input-field"
                             placeholder="Enter name" required
                             style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
 
+                        <!-- Type of Blessing -->
                         <label for="type-of-blessing" style="font-weight: bold; margin-bottom: 5px;">Type of
                             Blessing:</label>
                         <select id="type-of-blessing" name="type_of_blessing" class="dropdown-field" required
@@ -484,36 +505,74 @@ $stmt_notif->close();
                             <option value="For Business">For Business</option>
                         </select>
 
+                        <!-- GCash Section -->
+                        <div
+                            style="margin-bottom: 25px; padding: 20px; border: 1px solid #ddd; border-radius: 12px; background-color: #f9f9f9; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                            <h3 style="margin-top: 0; font-size: 18px; font-weight: bold; color: #333;">🙏 Donate via
+                                GCash</h3>
+
+                            <img src="./imgs/qr.png" alt="GCash QR Code"
+                                style="max-width: 200px; border-radius: 10px; margin: 15px 0; box-shadow: 0 0 5px rgba(0,0,0,0.1);">
+
+                            <p style="margin: 0; font-size: 16px; font-weight: 600; color: #000;">📱 GCash Number: <span
+                                    style="color: #4CAF50;">0991 189 5057</span></p>
+
+                            <p style="font-size: 14px; color: #555; margin-top: 8px;">💡 <em>Any donation will do. Thank
+                                    you for your generosity!</em></p>
+                        </div>
+
+                        <!-- Donation Receipt -->
                         <label for="donation-receipt" style="font-weight: bold; margin-bottom: 5px;">GCash or Bank
                             Transfer Receipt for Donation:</label>
                         <input type="file" id="donation-receipt" name="donation_receipt" class="input-field"
                             accept="image/*,application/pdf" required
                             style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
 
+                        <!-- Submit Button -->
                         <button type="submit" id="save-blessing" class="service-submit-btn" style="background-color: #4CAF50; color: white; border: none; padding: 12px 20px; 
-            font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; 
-            transition: background 0.3s ease-in-out; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);">
+        font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; 
+        transition: background 0.3s ease-in-out; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);">
                             Save Blessing
                         </button>
                     </form>
+
                 </div>
             </div>
 
-            <div id="payment-modal" class="modal" style="display: none;">
-                <div class="modal-content">
-                    <span class="close" id="close-modal">&times;</span>
-                    <h2>GCash or Bank Transfer Payment</h2>
-                    <p>Please upload a screenshot of your payment.</p>
-                    <p>Amount to Pay: <strong>₱100 per name</strong></p>
-                    <p>GCash Account: <strong>09911895057</strong></p>
-                    <p>GCash Name: <strong>CHR**** AL****</strong></p>
-                    <p>Bank Account: <strong>***********</strong></p>
-                    <p>Bank Name: <strong>CHR**** AL****</strong></p>
+            <div id="payment-modal" class="modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); 
+           justify-content: center; align-items: center; z-index: 1000;">
 
-                    <input type="file" id="gcash-receipt" accept="image/*" required>
-                    <button id="submit-payment">Submit Payment</button>
+                <div class="modal-content" style="background: white; padding: 25px 20px; border-radius: 10px; width: 90%; max-width: 420px; 
+               text-align: center; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+
+                    <span class="close" id="close-modal" style="position: absolute; top: 10px; right: 15px; font-size: 24px; 
+                   font-weight: bold; cursor: pointer;">&times;</span>
+
+                    <h2 style="margin-bottom: 10px;">GCash Payment</h2>
+                    <p style="font-size: 15px;">Please upload a screenshot of your GCash payment.</p>
+
+                    <div style="background-color: #f9f9f9; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                        <img src="./imgs/qr.png" alt="GCash QR Code"
+                            style="max-width: 180px; border-radius: 8px; margin-bottom: 10px;">
+                        <p style="margin: 5px 0;"><strong>Amount to Pay:</strong> ₱100 per head</p>
+                        <p style="margin: 5px 0;"><strong>GCash Number:</strong> 0991 189 5057</p>
+                        <p style="margin: 5px 0;"><strong>GCash Name:</strong> CHR**** AL****</p>
+                        <p style="font-size: 13px; color: #666;"><em>Any donation will do. Thank you for your
+                                generosity!</em></p>
+                    </div>
+
+                    <input type="file" id="gcash-receipt" accept="image/*,application/pdf" required
+                        style="margin-bottom: 15px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 100%;">
+
+                    <button id="submit-payment" style="background-color: #4CAF50; color: white; border: none; 
+                   padding: 12px 25px; font-size: 16px; font-weight: bold; 
+                   border-radius: 8px; cursor: pointer; margin-top: 10px;">
+                        Submit Payment
+                    </button>
                 </div>
             </div>
+
+
         </div>
 
 
@@ -537,26 +596,75 @@ $stmt_notif->close();
         </style>
 
         <!-- Baptism Payment Modal -->
-        <div id="payment-modal-baptism" class="modal"
-            style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
-            <div class="modal-content"
-                style="background: white; padding: 20px; border-radius: 8px; width: 400px; text-align: center;">
-                <h2>Upload GCash Receipt or Bank Transfer Receipt</h2>
-                <p>Please upload a screenshot of your payment.</p>
+        <div id="payment-modal-baptism" class="modal" style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    ">
 
-                <input type="file" id="gcash-receipt-baptism" accept="image/*" style="margin-bottom: 15px;">
+            <div class="modal-content" style="
+            background: white;
+            padding: 25px 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 420px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        ">
 
-                <br>
-                <button id="submit-payment-baptism"
-                    style="background-color: #4CAF50; color: white; border: none; padding: 10px 20px; font-size: 16px; font-weight: bold; border-radius: 5px; cursor: pointer;">Submit
-                    Payment</button>
-                <button id="close-modal-baptism"
-                    style="margin-left: 10px; background-color: #ccc; color: black; border: none; padding: 10px 20px; font-size: 16px; font-weight: bold; border-radius: 5px; cursor: pointer;">Close</button>
+                <h2 style="margin-bottom: 10px;">🧾 Upload Payment Receipt</h2>
+                <p style="font-size: 14px; color: #444;">Please upload a screenshot of your GCash or Bank Transfer
+                    receipt below.</p>
+
+                <div style="margin: 20px 0; padding: 15px; background-color: #f9f9f9; border-radius: 8px;">
+                    <h3 style="margin-top: 0; font-size: 16px; color: #333;">📱 GCash Details</h3>
+                    <img src="./imgs/qr.png" alt="GCash QR Code"
+                        style="max-width: 180px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.1);">
+                    <p style="margin: 0; font-weight: bold; font-size: 15px;">GCash Number: <span
+                            style="color: #4CAF50;">0991 189 5057</span></p>
+                    <p style="font-size: 13px; color: #666;"><em>Any donation will do. Thank you for your
+                            generosity!</em></p>
+                </div>
+
+                <p id="baptism-payment-amount"
+                    style="font-size: 16px; font-weight: bold; color: #333; margin-bottom: 5px;">
+                    Total to Pay: ₱0
+                </p>
+
+                <p style="margin: 0; font-size: 14px; color: #444;">
+                    Base Rate: ₱500
+                </p>
+
+                <small style="display: block; margin-bottom: 15px; font-size: 13px; color: #888;">
+                    * First 2 Ninongs/Ninangs are free. Additional entries cost ₱30 each.
+                </small>
+
+
+                <input type="file" id="gcash-receipt-baptism" accept="image/*,application/pdf" required
+                    style="margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+
+
+                <div>
+                    <button id="submit-payment-baptism" style="background-color: #4CAF50; color: white; border: none; padding: 10px 30px; 
+                       font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer;">
+                        Submit Payment
+                    </button>
+                    <button id="close-modal-baptism" style="margin-left: 10px; background-color: #ccc; color: black; border: none; 
+                       padding: 10px 30px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer;">
+                        Close
+                    </button>
+                </div>
             </div>
         </div>
 
+
+
         <script>
-            $(document).ready(function() {
+            $(document).ready(function () {
                 function renderCalendar() {
                     $('#calendar').fullCalendar({
                         selectable: true,
@@ -568,14 +676,14 @@ $stmt_notif->close();
                             right: 'month,agendaWeek,agendaDay'
                         },
                         events: [],
-                        dayRender: function(date, cell) {
+                        dayRender: function (date, cell) {
                             if ($('#baptism-form').is(':visible')) {
                                 if (date.day() === 0) {
                                     cell.css('background-color', '#7ea67b');
 
                                     $.getJSON('fetch_slots.php', {
                                         date: date.format('YYYY-MM-DD')
-                                    }, function(data) {
+                                    }, function (data) {
                                         let slotsText = data.slots_remaining > 0 ?
                                             `${data.slots_remaining} SLOTS REMAINING` :
                                             `Fully Booked`;
@@ -598,7 +706,7 @@ $stmt_notif->close();
                                     $.getJSON('fetch_slots.php', {
                                         date: date.format('YYYY-MM-DD'),
                                         service: 'blessing'
-                                    }, function(data) {
+                                    }, function (data) {
                                         let slotsText = data.slots_remaining > 0 ? `${data.slots_remaining} SLOTS REMAINING` : `Fully Booked`;
                                         cell.append(`<br><div style="color: white; font-size: 20px; text-align: center; font-weight: bold;">${slotsText}</div>`);
                                         if (data.slots_remaining <= 0) cell.addClass('fully-booked');
@@ -612,7 +720,7 @@ $stmt_notif->close();
 
                         },
 
-                        select: function(start, end) {
+                        select: function (start, end) {
                             let selectedDate = start.format('YYYY-MM-DD');
                             let selectedDay = moment(selectedDate).format('dddd');
 
@@ -624,7 +732,7 @@ $stmt_notif->close();
                                 return;
                             }
 
-                            let events = $('#calendar').fullCalendar('clientEvents', function(event) {
+                            let events = $('#calendar').fullCalendar('clientEvents', function (event) {
                                 return event.start.format('YYYY-MM-DD') === selectedDate;
                             });
 
@@ -686,14 +794,14 @@ $stmt_notif->close();
 
                 renderCalendar();
 
-                $('#pamisa').click(function() {
+                $('#pamisa').click(function () {
                     $('#calendar').fullCalendar('destroy');
 
-                    setTimeout(function() {
+                    setTimeout(function () {
                         renderPamisaCalendar();
                         $('#calendar').fullCalendar('removeEvents');
 
-                        $.getJSON('fetch_booked_dates.php', function(data) {
+                        $.getJSON('fetch_booked_dates.php', function (data) {
                             $('#calendar').fullCalendar('addEventSource', data);
                         });
 
@@ -719,16 +827,16 @@ $stmt_notif->close();
                         },
                         events: [],
 
-                        dayRender: function(date, cell) {
+                        dayRender: function (date, cell) {
                             cell.css('background-color', '');
                             cell.find('div').remove();
                         },
 
-                        select: function(start, end) {
+                        select: function (start, end) {
                             let selectedDate = start.format('YYYY-MM-DD');
                             let selectedDay = moment(selectedDate).format('dddd');
 
-                            let events = $('#calendar').fullCalendar('clientEvents', function(event) {
+                            let events = $('#calendar').fullCalendar('clientEvents', function (event) {
                                 return event.start.format('YYYY-MM-DD') === selectedDate;
                             });
 
@@ -790,12 +898,12 @@ $stmt_notif->close();
                             center: 'title',
                             right: 'month,agendaWeek,agendaDay'
                         },
-                        events: function(start, end, timezone, callback) {
+                        events: function (start, end, timezone, callback) {
                             $.ajax({
                                 url: "fetch_blessings.php?priest_name=" + $('#blessing-form #priest_name').val(),
                                 type: "GET",
                                 dataType: "json",
-                                success: function(response) {
+                                success: function (response) {
                                     console.log($('#blessing-form #priest_name').val());
                                     window.bookedSlots = response.bookedSlots || {};
                                     callback(response.events);
@@ -803,10 +911,10 @@ $stmt_notif->close();
                             });
                         },
                         displayEventTime: false,
-                        eventRender: function(event, element) {
+                        eventRender: function (event, element) {
                             element.find('.fc-title').text(event.title);
                         },
-                        dayRender: function(date, cell) {
+                        dayRender: function (date, cell) {
                             if (date.day() === 5 || date.day() === 6) {
                                 cell.css('background-color', '#fcfcfc');
                             } else {
@@ -814,7 +922,7 @@ $stmt_notif->close();
                                 cell.append('<br><div style="color: white; font-size: 13px; text-align: center; font-weight: bold;">Not Allowed for Blessings</div>');
                             }
                         },
-                        select: function(start) {
+                        select: function (start) {
                             let selectedDate = start.format('YYYY-MM-DD');
                             let selectedDay = moment(selectedDate).format('dddd');
 
@@ -845,7 +953,7 @@ $stmt_notif->close();
                 }
 
                 // Update priest name in service-info when select is changed
-                $('#blessing-form #priest_name').on('change', function() {
+                $('#blessing-form #priest_name').on('change', function () {
                     let priestName = $(this).val();
                     let serviceInfo = $('#service-info').html();
                     // Try to update only the priest line, or add it if not present
@@ -861,8 +969,8 @@ $stmt_notif->close();
                 });
 
 
-                $(document).ready(function() {
-                    $("#blessing-form").submit(function(e) {
+                $(document).ready(function () {
+                    $("#blessing-form").submit(function (e) {
                         e.preventDefault();
                         let formData = new FormData(this);
 
@@ -885,7 +993,7 @@ $stmt_notif->close();
                             data: formData,
                             contentType: false,
                             processData: false,
-                            success: function(response) {
+                            success: function (response) {
                                 let res = JSON.parse(response);
 
                                 Swal.fire({
@@ -898,10 +1006,10 @@ $stmt_notif->close();
                                     }
                                 });
                             },
-                            error: function() {
+                            error: function () {
                                 Swal.fire("Error", "Something went wrong. Please try again.", "error");
                             },
-                            complete: function() {
+                            complete: function () {
                                 // Re-enable button and restore original text after SweetAlert is closed
                                 saveButton.prop("disabled", false);
                                 saveButton.html("Save Blessing");
@@ -911,7 +1019,7 @@ $stmt_notif->close();
                 });
 
 
-                $('#pamisa-form').submit(function(e) {
+                $('#pamisa-form').submit(function (e) {
                     e.preventDefault();
                     $('#loading-spinner').css('display', 'flex');
 
@@ -923,7 +1031,7 @@ $stmt_notif->close();
                         selected_time: $('#pamisa-time').val()
                     };
 
-                    $.post('save_pamisa.php', data, function(response) {
+                    $.post('save_pamisa.php', data, function (response) {
                         let res = JSON.parse(response);
                         $('#loading-spinner').hide();
 
@@ -943,13 +1051,13 @@ $stmt_notif->close();
                                 text: res.message
                             });
                         }
-                    }).fail(function() {
+                    }).fail(function () {
                         $('#loading-spinner').hide();
                         Swal.fire("Oops...", "Something went wrong. Please try again!", "error");
                     });
                 });
 
-                $('#baptismBtn').click(function() {
+                $('#baptismBtn').click(function () {
                     $('#pamisa-form').hide();
                     $('#baptism-form').show();
                     $('#blessing-form').hide();
@@ -959,7 +1067,7 @@ $stmt_notif->close();
                     renderCalendar();
                 });
 
-                $('#blessing').click(function() {
+                $('#blessing').click(function () {
                     $('#pamisa-form, #baptism-form').hide();
                     $('#blessing-form').show();
                     $('#service-info').html('<strong>Service:</strong> Blessing<br>Please select a date.');
@@ -977,23 +1085,23 @@ $stmt_notif->close();
                 });
 
                 // Re-render calendar when priest is selected
-                $('#blessing-form #priest_name').on('change', function() {
+                $('#blessing-form #priest_name').on('change', function () {
                     if ($('#blessing-form').is(':visible')) {
                         $('#calendar').fullCalendar('destroy');
                         var priestName = $(this).val();
                         if (!priestName) {
                             $('#calendar').html('<div style="color: red; text-align: center; font-weight: bold; padding: 30px;">Please select priest</div>');
                             return;
-                        }else{
+                        } else {
                             $('#calendar').html('<div style="color: green; text-align: center; font-weight: bold; padding: 30px;">Selected Priest: <strong>' + priestName + '</strong></div>');
                             renderBlessingCalendar();
                         }
-                        
+
                     }
                 });
 
 
-                $('#addMore').click(function() {
+                $('#addMore').click(function () {
                     $('#ninongNinangFields').append(`
                 <div>
                     <input type="text" name="ninong_ninang[]" class="input-field" placeholder="Enter name" required> 
@@ -1002,17 +1110,17 @@ $stmt_notif->close();
             `);
                 });
 
-                $(document).on("click", ".remove", function() {
+                $(document).on("click", ".remove", function () {
                     $(this).parent().remove();
                 });
 
 
-                $('#baptism-form').submit(function(e) {
+                $('#baptism-form').submit(function (e) {
                     e.preventDefault();
                     $('#loading-spinner').css('display', 'flex');
 
                     let ninongsNinangs = [];
-                    $('input[name="ninong_ninang[]"]').each(function() {
+                    $('input[name="ninong_ninang[]"]').each(function () {
                         ninongsNinangs.push($(this).val());
                     });
 
@@ -1031,16 +1139,17 @@ $stmt_notif->close();
                         type: 'POST',
                         data: JSON.stringify(data),
                         contentType: "application/json",
-                        success: function(response) {
+                        success: function (response) {
                             $('#loading-spinner').hide();
                             let res;
+                            let additionalNinongs = Math.max(0, ninongsNinangs.length - 2);
+                            let totalAmount = 500 + (additionalNinongs * 30);
+
                             try {
                                 res = JSON.parse(response);
                                 if (res.status === "success") {
-                                    let additionalNinongs = Math.max(0, ninongsNinangs.length - 2);
-                                    let totalAmount = 500 + (additionalNinongs * 30);
-
                                     $('#total-payment').text(`Total Amount: ₱${totalAmount}`);
+                                    $('#baptism-payment-amount').text(`Total to Pay: ₱${totalAmount}`);
 
                                     Swal.fire({
                                         icon: "success",
@@ -1050,11 +1159,14 @@ $stmt_notif->close();
                                     }).then(() => {
                                         $('#payment-modal-baptism').fadeIn();
                                     });
-
                                 } else {
                                     Swal.fire("Error", res.message, "error");
                                 }
                             } catch (e) {
+                                // In case response is not JSON but still succeeds
+                                $('#total-payment').text(`Total Amount: ₱${totalAmount}`);
+                                $('#baptism-payment-amount').text(`Total to Pay: ₱${totalAmount}`);
+
                                 Swal.fire({
                                     icon: "success",
                                     title: "Success",
@@ -1065,7 +1177,7 @@ $stmt_notif->close();
                                 });
                             }
                         },
-                        error: function() {
+                        error: function () {
                             $('#loading-spinner').hide();
                             Swal.fire("Oops...", "Something went wrong. Please try again!", "error");
                         }
@@ -1073,23 +1185,25 @@ $stmt_notif->close();
                 });
 
 
-                $('#proceed-payment-baptism').click(function() {
+
+
+                $('#proceed-payment-baptism').click(function () {
                     $('#payment-modal-baptism').fadeIn();
                 });
 
-                $('#close-modal-baptism').click(function() {
+                $('#close-modal-baptism').click(function () {
                     $('#payment-modal-baptism').fadeOut();
                 });
 
-                $('#proceed-payment').click(function() {
+                $('#proceed-payment').click(function () {
                     $('#payment-modal').fadeIn();
                 });
 
-                $('#close-modal').click(function() {
+                $('#close-modal').click(function () {
                     $('#payment-modal').fadeOut();
                 });
 
-                $('#submit-payment').click(function() {
+                $('#submit-payment').click(function () {
                     let fileInput = $('#gcash-receipt')[0].files[0];
                     if (!fileInput) {
                         Swal.fire("Error", "Please upload a GCash receipt.", "error");
@@ -1107,18 +1221,18 @@ $stmt_notif->close();
                         data: formData,
                         processData: false,
                         contentType: false,
-                        success: function(response) {
+                        success: function (response) {
                             $('#loading-spinner').hide();
                             Swal.fire("Payment Submitted", "Your payment has been received. Please check your email.", "success");
                         },
-                        error: function() {
+                        error: function () {
                             $('#loading-spinner').hide();
                             Swal.fire("Oops...", "Something went wrong. Please try again!", "error");
                         }
                     });
                 });
 
-                $('#submit-payment-baptism').click(function() {
+                $('#submit-payment-baptism').click(function () {
                     let fileInput = $('#gcash-receipt-baptism')[0].files[0];
                     if (!fileInput) {
                         Swal.fire("Error", "Please upload a GCash receipt for Baptism.", "error");
@@ -1136,7 +1250,7 @@ $stmt_notif->close();
                         data: formData,
                         processData: false,
                         contentType: false,
-                        success: function(response) {
+                        success: function (response) {
                             $('#loading-spinner').hide();
 
                             try {
@@ -1155,7 +1269,7 @@ $stmt_notif->close();
                                 Swal.fire("Error", "Invalid response from the server. Please contact support.", "error");
                             }
                         },
-                        error: function(xhr, status, error) {
+                        error: function (xhr, status, error) {
                             $('#loading-spinner').hide();
                             console.error("AJAX Error:", error);
                             Swal.fire("Oops...", "Something went wrong. Please try again!", "error");
@@ -1172,10 +1286,10 @@ $stmt_notif->close();
 
                 $('#calendar').fullCalendar({
                     selectable: true,
-                    select: function(start) {
+                    select: function (start) {
                         let selectedDate = start.format('YYYY-MM-DD');
 
-                        fetchAvailableSlots(selectedDate).done(function(data) {
+                        fetchAvailableSlots(selectedDate).done(function (data) {
                             if (data.slots_remaining > 0) {
                                 $('#service-info').html(`<strong>Selected Date:</strong> ${selectedDate} (Slots left: ${data.slots_remaining})`);
                             } else {
@@ -1189,12 +1303,12 @@ $stmt_notif->close();
         </script>
 
         <script>
-            $(document).ready(function() {
-                $('#notification-link').on('click', function(e) {
+            $(document).ready(function () {
+                $('#notification-link').on('click', function (e) {
                     $.ajax({
                         url: 'clear_notifications.php',
                         method: 'POST',
-                        success: function() {
+                        success: function () {
                             $('.notification-badge').fadeOut();
                         }
                     });
