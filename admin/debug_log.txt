@@ -1,0 +1,146 @@
+Array
+(
+    [id] => 8
+    [column] => parents_name
+    [value] => Deinadsdd
+    [type] => 
+)
+Array
+(
+    [id] => 8
+    [column] => status
+    [value] => Pending
+    [type] => 
+)
+Array
+(
+    [requestId] => 7
+    [name_of_intended] => SANTOS
+    [pamisa_type] => Thanksgiving
+    [selected_time] => 06:30 AM
+    [price] => 100.00
+    [status] => Approved
+)
+Updating ID: 7 
+Updating ID: 7 
+Array
+(
+    [requestId] => 7
+    [name_of_intended] => SANTOSS
+    [pamisa_type] => Thanksgiving
+    [selected_time] => 06:30 AM
+    [price] => 100.00
+    [status] => Approved
+)
+Updating ID: 7 
+Array
+(
+    [requestId] => 7
+    [name_of_intended] => SANTOSzz
+    [pamisa_type] => Thanksgiving
+    [selected_time] => 06:30 AM
+    [price] => 100.00
+    [status] => Approved
+)
+Updating ID: 7 
+Array
+(
+    [requestId] => 7
+    [name_of_intended] => SANTOSzz
+    [pamisa_type] => Thanksgiving
+    [selected_time] => 06:30 AM
+    [price] => 100.00
+    [status] => Accepted
+)
+Updating ID: 7 
+Array
+(
+    [requestId] => 7
+    [name_of_intended] => SANTOSzz
+    [pamisa_type] => Thanksgiving
+    [selected_time] => 06:30 AM
+    [price] => 100.00
+    [status] => Approved
+)
+Updating ID: 7 
+Array
+(
+    [requestId] => 7
+    [name_of_intended] => SANTOs
+    [pamisa_type] => Thanksgiving
+    [selected_time] => 06:30 AM
+    [price] => 100.00
+    [status] => Accepted
+)
+Updating ID: 7, Status: Accepted 
+Array
+(
+    [requestId] => 7
+    [name_of_intended] => SANTOs
+    [pamisa_type] => Thanksgiving
+    [selected_time] => 06:30 AM
+    [price] => 100.00
+    [status] => Approved
+)
+Updating ID: 7, Status: Approved 
+Array
+(
+    [requestId] => 7
+    [name_of_intended] => SANTOs
+    [pamisa_type] => Thanksgiving
+    [selected_time] => 06:30 AM
+    [price] => 100.00
+    [status] => Approved
+)
+Updating ID: 7, Status: Approved 
+Array
+(
+    [requestId] => 7
+    [name_of_intended] => SANTOs
+    [pamisa_type] => Thanksgiving
+    [selected_time] => 06:30 AM
+    [price] => 100.00
+    [status] => Approved
+)
+Updating ID: 7, Status: Approved 
+Array
+(
+    [requestId] => 7
+    [name_of_intended] => SANTOs
+    [pamisa_type] => Thanksgiving
+    [selected_time] => 06:30 AM
+    [price] => 100.00
+    [status] => Approved
+)
+Updating ID: 7, Status: Approved 
+Array
+(
+    [requestId] => 7
+    [name_of_intended] => SANTOS PRECIOUS
+    [pamisa_type] => Thanksgiving
+    [selected_time] => 06:30 AM
+    [price] => 100.00
+    [status] => Approved
+)
+Array
+(
+    [requestId] => 7
+    [name_of_intended] => SANTOS PRECIOUS
+    [pamisa_type] => Thanksgiving
+    [selected_time] => 06:30 AM
+    [price] => 100.00
+    [status] => Approved
+)
+Updating ID: 7 
+Updating ID: 7 
+Array
+(
+    [requestId] => 7
+    [name_of_intended] => SANTOS PRECIOUS bb
+    [pamisa_type] => Thanksgiving
+    [selected_time] => 06:30 AM
+    [price] => 100.00
+    [status] => Approved
+)
+Updating ID: 7 
+Updating ID: 7 
