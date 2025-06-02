@@ -49,7 +49,7 @@ if (isset($scheduled_priest) && strtolower(trim($scheduled_priest)) === 'all pri
     exit();
 }
 
-// Check for duplicate time slot
+// Check if the slot has reached the maximum capacity (50 requests)
 $sql_check = "SELECT COUNT(*) FROM pamisa_requests WHERE selected_date = ? AND selected_time = ?";
 $stmt_check = $conn->prepare($sql_check);
 $stmt_check->bind_param("ss", $selected_date, $selected_time);
@@ -58,10 +58,11 @@ $stmt_check->bind_result($count);
 $stmt_check->fetch();
 $stmt_check->close();
 
-if ($count > 0) {
-    echo json_encode(["status" => "error", "message" => "The selected date and time are already taken."]);
+if ($count >= 500) {
+    echo json_encode(["status" => "error", "message" => "The selected date and time has already full."]);
     exit();
 }
+
 
 // Get user email
 $sql_user = "SELECT email FROM users WHERE id = ?";

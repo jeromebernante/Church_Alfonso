@@ -24,30 +24,30 @@ $stmt->close();
 date_default_timezone_set('Asia/Manila');
 $current_datetime = date("l, F j, Y g:i A");
 $current_day = date('l');
-if ($current_day === 'Monday') {
-    echo '
-    <style>
-        body {
-            background-color: white !important;
-            overflow: hidden;
-        }
-    </style>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            Swal.fire({
-                icon: "info",
-                title: "Scheduling Closed",
-                text: "Scheduling is not available on Mondays. Please come back another day.",
-                confirmButtonText: "OK"
-            }).then(() => {
-                window.location.href = "front.php"; // You can change this if needed
-            });
-        });
-    </script>
-    ';
-    exit();
-}
+// if ($current_day === 'Monday') {
+//     echo '
+//     <style>
+//         body {
+//             background-color: white !important;
+//             overflow: hidden;
+//         }
+//     </style>
+//     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+//     <script>
+//         document.addEventListener("DOMContentLoaded", function() {
+//             Swal.fire({
+//                 icon: "info",
+//                 title: "Scheduling Closed",
+//                 text: "Scheduling is not available on Mondays. Please come back another day.",
+//                 confirmButtonText: "OK"
+//             }).then(() => {
+//                 window.location.href = "front.php"; // You can change this if needed
+//             });
+//         });
+//     </script>
+//     ';
+//     exit();
+// }
 
 $sql_notif = "SELECT COUNT(*) FROM notifications WHERE user_id = ? AND status = 'success'";
 $stmt_notif = $conn->prepare($sql_notif);
@@ -404,8 +404,8 @@ $stmt_notif->close();
                         </select>
 
                         <button type="submit" id="save-pamisa" class="service-submit-btn" style="background-color: #4CAF50; color: white; border: none; padding: 12px 20px; 
-                    font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; 
-                    transition: background 0.3s ease-in-out; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);">
+                            font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; 
+                            transition: background 0.3s ease-in-out; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);">
                             Save Pamisa
                         </button>
 
@@ -768,12 +768,6 @@ $stmt_notif->close();
                                     $('#calendar').fullCalendar('unselect');
                                     return;
                                 }
-                            } else {
-                                if (events.length > 0) {
-                                    Swal.fire("Date Not Available", "This date is already booked. Please choose another date.", "warning");
-                                    $('#calendar').fullCalendar('unselect');
-                                    return;
-                                }
                             }
 
                             $('#service-info').html('<strong>Selected Date:</strong> ' + selectedDate + '.<br>');
@@ -861,12 +855,6 @@ $stmt_notif->close();
                             if (selectedDay === "Saturday" || selectedDay === "Sunday") {
                                 if (events.length === availableTimes.length) {
                                     Swal.fire("Fully Booked", "All time slots for this day are booked. Please choose another date.", "warning");
-                                    $('#calendar').fullCalendar('unselect');
-                                    return;
-                                }
-                            } else {
-                                if (events.length > 0) {
-                                    Swal.fire("Date Not Available", "This date is already booked. Please choose another date.", "warning");
                                     $('#calendar').fullCalendar('unselect');
                                     return;
                                 }
@@ -1033,7 +1021,10 @@ $stmt_notif->close();
 
                     $.post('save_pamisa.php', data, function (response) {
                         let res = JSON.parse(response);
+                        console.log(res);
+                        
                         $('#loading-spinner').hide();
+
 
                         if (res.status === "success") {
                             Swal.fire({
