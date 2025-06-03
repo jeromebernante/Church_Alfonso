@@ -206,11 +206,11 @@ $stmt_notif->close();
 
                                 if (mysqli_num_rows($select_priest) > 0) {
                                     while ($row = mysqli_fetch_assoc($select_priest)) {
-                                        ?>
+                                ?>
 
                                         <option value="<?php echo $row['name'] ?>"><?php echo $row['name'] ?></option>
 
-                                        <?php
+                                <?php
                                     }
                                 }
                                 ?>
@@ -254,15 +254,15 @@ $stmt_notif->close();
                 </div>
 
                 <script>
-                    document.getElementById("weddingForm").addEventListener("submit", function (event) {
+                    document.getElementById("weddingForm").addEventListener("submit", function(event) {
                         event.preventDefault();
 
                         let formData = new FormData(this);
 
                         fetch("wedding_request.php", {
-                            method: "POST",
-                            body: formData
-                        })
+                                method: "POST",
+                                body: formData
+                            })
                             .then(response => response.json())
                             .then(data => {
                                 if (data.status === "success") {
@@ -279,26 +279,26 @@ $stmt_notif->close();
                 </script>
 
                 <script>
-                    document.getElementById("wedding").addEventListener("click", function () {
+                    document.getElementById("wedding").addEventListener("click", function() {
                         document.getElementById("weddingModal").style.display = "flex";
                     });
 
-                    document.querySelector(".close").addEventListener("click", function () {
+                    document.querySelector(".close").addEventListener("click", function() {
                         document.getElementById("weddingModal").style.display = "none";
                     });
 
-                    document.getElementById("closeModalBtn").addEventListener("click", function () {
+                    document.getElementById("closeModalBtn").addEventListener("click", function() {
                         document.getElementById("weddingModal").style.display = "none";
                     });
 
-                    window.addEventListener("click", function (event) {
+                    window.addEventListener("click", function(event) {
                         let modal = document.getElementById("weddingModal");
                         if (event.target === modal) {
                             modal.style.display = "none";
                         }
                     });
 
-                    document.getElementById("weddingDate").addEventListener("input", function () {
+                    document.getElementById("weddingDate").addEventListener("input", function() {
                         let selectedDate = new Date(this.value);
                         let minDate = new Date();
                         minDate.setMonth(minDate.getMonth() + 3);
@@ -314,7 +314,7 @@ $stmt_notif->close();
                         }
                     });
 
-                    document.getElementById("gcashReceipt").addEventListener("change", function () {
+                    document.getElementById("gcashReceipt").addEventListener("change", function() {
                         let file = this.files[0];
                         let allowedExtensions = ["image/png", "image/jpeg", "image/jpg"];
 
@@ -329,7 +329,7 @@ $stmt_notif->close();
                         }
                     });
 
-                    document.getElementById("weddingForm").addEventListener("submit", function (event) {
+                    document.getElementById("weddingForm").addEventListener("submit", function(event) {
                         event.preventDefault();
 
                         let brideName = document.getElementById("brideName").value.trim();
@@ -402,10 +402,25 @@ $stmt_notif->close();
                             <option value="Wedding Anniversary">Wedding Anniversary</option>
                             <option value="Souls">Souls</option>
                         </select>
+                        <div class="payment-card">
+                            
+                            <h2 style="margin-bottom: 10px; font-size: 24px;">GCash Payment</h2>
+                            <p style="font-size: 15px; color: #333;">Please upload a screenshot of your GCash payment.</p>
+                            
+                            <div style="background-color: #f9f9f9; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                                <img src="./imgs/qr.png" alt="GCash QR Code" style="max-width: 180px; border-radius: 8px; margin-bottom: 10px;">
+                                <p style="margin: 5px 0; font-size: 14px;"><strong>Amount to Pay:</strong> ₱100</p>
+                                <p style="margin: 5px 0; font-size: 14px;"><strong>GCash Number:</strong> 0991 189 5057</p>
+                                <p style="margin: 5px 0; font-size: 14px;"><strong>GCash Name:</strong> CHR**** AL****</p>
+                            </div>
 
+                            <input type="file" id="gcash-receipt" accept="image/*,application/pdf" required
+                                style="margin-bottom: 15px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 100%; box-sizing: border-box;">
+                            
+                        </div>
                         <button type="submit" id="save-pamisa" class="service-submit-btn" style="background-color: #4CAF50; color: white; border: none; padding: 12px 20px; 
-                            font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; 
-                            transition: background 0.3s ease-in-out; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);">
+                    font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; 
+                    transition: background 0.3s ease-in-out; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);">
                             Save Pamisa
                         </button>
 
@@ -479,9 +494,9 @@ $stmt_notif->close();
                             $select_priest = mysqli_query($conn, 'SELECT * FROM priests');
                             if (mysqli_num_rows($select_priest) > 0) {
                                 while ($row = mysqli_fetch_assoc($select_priest)) {
-                                    ?>
+                            ?>
                                     <option value="<?php echo $row['name'] ?>"><?php echo $row['name'] ?></option>
-                                    <?php
+                            <?php
                                 }
                             }
                             ?>
@@ -664,7 +679,7 @@ $stmt_notif->close();
 
 
         <script>
-            $(document).ready(function () {
+            $(document).ready(function() {
                 function renderCalendar() {
                     $('#calendar').fullCalendar({
                         selectable: true,
@@ -676,14 +691,14 @@ $stmt_notif->close();
                             right: 'month,agendaWeek,agendaDay'
                         },
                         events: [],
-                        dayRender: function (date, cell) {
+                        dayRender: function(date, cell) {
                             if ($('#baptism-form').is(':visible')) {
                                 if (date.day() === 0) {
                                     cell.css('background-color', '#7ea67b');
 
                                     $.getJSON('fetch_slots.php', {
                                         date: date.format('YYYY-MM-DD')
-                                    }, function (data) {
+                                    }, function(data) {
                                         let slotsText = data.slots_remaining > 0 ?
                                             `${data.slots_remaining} SLOTS REMAINING` :
                                             `Fully Booked`;
@@ -706,7 +721,7 @@ $stmt_notif->close();
                                     $.getJSON('fetch_slots.php', {
                                         date: date.format('YYYY-MM-DD'),
                                         service: 'blessing'
-                                    }, function (data) {
+                                    }, function(data) {
                                         let slotsText = data.slots_remaining > 0 ? `${data.slots_remaining} SLOTS REMAINING` : `Fully Booked`;
                                         cell.append(`<br><div style="color: white; font-size: 20px; text-align: center; font-weight: bold;">${slotsText}</div>`);
                                         if (data.slots_remaining <= 0) cell.addClass('fully-booked');
@@ -720,7 +735,7 @@ $stmt_notif->close();
 
                         },
 
-                        select: function (start, end) {
+                        select: function(start, end) {
                             let selectedDate = start.format('YYYY-MM-DD');
                             let selectedDay = moment(selectedDate).format('dddd');
 
@@ -732,7 +747,7 @@ $stmt_notif->close();
                                 return;
                             }
 
-                            let events = $('#calendar').fullCalendar('clientEvents', function (event) {
+                            let events = $('#calendar').fullCalendar('clientEvents', function(event) {
                                 return event.start.format('YYYY-MM-DD') === selectedDate;
                             });
 
@@ -768,6 +783,12 @@ $stmt_notif->close();
                                     $('#calendar').fullCalendar('unselect');
                                     return;
                                 }
+                            } else {
+                                if (events.length > 0) {
+                                    Swal.fire("Date Not Available", "This date is already booked. Please choose another date.", "warning");
+                                    $('#calendar').fullCalendar('unselect');
+                                    return;
+                                }
                             }
 
                             $('#service-info').html('<strong>Selected Date:</strong> ' + selectedDate + '.<br>');
@@ -788,16 +809,12 @@ $stmt_notif->close();
 
                 renderCalendar();
 
-                $('#pamisa').click(function () {
+                $('#pamisa').click(function() {
                     $('#calendar').fullCalendar('destroy');
 
-                    setTimeout(function () {
+                    setTimeout(function() {
                         renderPamisaCalendar();
                         $('#calendar').fullCalendar('removeEvents');
-
-                        $.getJSON('fetch_booked_dates.php', function (data) {
-                            $('#calendar').fullCalendar('addEventSource', data);
-                        });
 
                         $('#service-info').html('<strong>Service:</strong> Pamisa<br>Please select a date.');
                         $('#pamisa-form').show();
@@ -821,16 +838,16 @@ $stmt_notif->close();
                         },
                         events: [],
 
-                        dayRender: function (date, cell) {
+                        dayRender: function(date, cell) {
                             cell.css('background-color', '');
                             cell.find('div').remove();
                         },
 
-                        select: function (start, end) {
+                        select: function(start, end) {
                             let selectedDate = start.format('YYYY-MM-DD');
                             let selectedDay = moment(selectedDate).format('dddd');
 
-                            let events = $('#calendar').fullCalendar('clientEvents', function (event) {
+                            let events = $('#calendar').fullCalendar('clientEvents', function(event) {
                                 return event.start.format('YYYY-MM-DD') === selectedDate;
                             });
 
@@ -846,19 +863,6 @@ $stmt_notif->close();
 
                             let availableTimes = timeOptions[selectedDay] || [];
 
-                            if (availableTimes.length === 0) {
-                                Swal.fire("No Available Time", "No mass schedules for " + selectedDay, "error");
-                                $('#calendar').fullCalendar('unselect');
-                                return;
-                            }
-
-                            if (selectedDay === "Saturday" || selectedDay === "Sunday") {
-                                if (events.length === availableTimes.length) {
-                                    Swal.fire("Fully Booked", "All time slots for this day are booked. Please choose another date.", "warning");
-                                    $('#calendar').fullCalendar('unselect');
-                                    return;
-                                }
-                            }
 
                             $('#service-info').html('<strong>Selected Date:</strong> ' + selectedDate + '.<br>');
 
@@ -876,7 +880,13 @@ $stmt_notif->close();
                 }
 
                 function renderBlessingCalendar() {
-                    $('#calendar').fullCalendar('destroy'); // Destroy any existing calendar before re-rendering
+                    if (!$('#calendar').length) {
+                        console.error('Calendar element not found.');
+                        Swal.fire("Error", "Calendar element not found. Please check the page.", "error");
+                        return;
+                    }
+
+                    $('#calendar').fullCalendar('destroy');
                     $('#calendar').fullCalendar({
                         selectable: true,
                         selectHelper: true,
@@ -886,23 +896,34 @@ $stmt_notif->close();
                             center: 'title',
                             right: 'month,agendaWeek,agendaDay'
                         },
-                        events: function (start, end, timezone, callback) {
+                        events: function(start, end, timezone, callback) {
                             $.ajax({
-                                url: "fetch_blessings.php?priest_name=" + $('#blessing-form #priest_name').val(),
+                                url: "fetch_blessings.php?priest_name=" + encodeURIComponent($('#blessing-form #priest_name').val()),
                                 type: "GET",
                                 dataType: "json",
-                                success: function (response) {
-                                    console.log($('#blessing-form #priest_name').val());
+                                success: function(response) {
+                                    console.log('Fetched priest:', $('#blessing-form #priest_name').val());
                                     window.bookedSlots = response.bookedSlots || {};
-                                    callback(response.events);
+                                    callback(response.events || []);
+                                },
+                                error: function(xhr, status, error) {
+                                    console.error('Error fetching blessing events:', status, error);
+                                    Swal.fire("Error", "Failed to load blessing schedule. Please try again.", "error");
+                                    callback([]);
                                 }
                             });
                         },
-                        displayEventTime: false,
-                        eventRender: function (event, element) {
+                        displayEventTime: true,
+                        eventRender: function(event, element) {
                             element.find('.fc-title').text(event.title);
+                            element.find('.fc-time').text(event.start.format('h:mm A'));
+                            element.css({
+                                'background-color': event.backgroundColor || '#ff0000',
+                                'border-color': event.borderColor || '#ff0000',
+                                'color': event.textColor || '#ffffff'
+                            });
                         },
-                        dayRender: function (date, cell) {
+                        dayRender: function(date, cell) {
                             if (date.day() === 5 || date.day() === 6) {
                                 cell.css('background-color', '#fcfcfc');
                             } else {
@@ -910,7 +931,7 @@ $stmt_notif->close();
                                 cell.append('<br><div style="color: white; font-size: 13px; text-align: center; font-weight: bold;">Not Allowed for Blessings</div>');
                             }
                         },
-                        select: function (start) {
+                        select: function(start) {
                             let selectedDate = start.format('YYYY-MM-DD');
                             let selectedDay = moment(selectedDate).format('dddd');
 
@@ -920,7 +941,6 @@ $stmt_notif->close();
                                 return;
                             }
 
-                            // Check if the selected date has 4 full booked slots
                             let bookedTimes = window.bookedSlots && window.bookedSlots[selectedDate] ? window.bookedSlots[selectedDate] : [];
                             let requiredTimes = ["09:00:00", "11:00:00", "13:00:00", "15:00:00"];
                             let allSlotsBooked = requiredTimes.every(time => bookedTimes.includes(time));
@@ -931,9 +951,22 @@ $stmt_notif->close();
                                 return;
                             }
 
-                            // Show selected priest name in the service-info section
                             let priestName = $('#priest_name').val();
                             $('#service-info').html(`<strong>Selected Date:</strong> ${selectedDate}<br><strong>Priest:</strong> ${priestName}`);
+                            $('#blessing-form').show();
+
+                            // Populate time dropdown with available slots
+                            let availableTimes = requiredTimes.filter(time => !bookedTimes.includes(time));
+                            $('#blessing-time').empty();
+                            if (availableTimes.length === 0) {
+                                Swal.fire("No Available Slots", `All time slots for ${selectedDate} are booked. Please choose another date.`, "error");
+                                $('#calendar').fullCalendar('unselect');
+                                return;
+                            }
+                            availableTimes.forEach(time => {
+                                let time12Hour = moment(time, 'HH:mm:ss').format('h:mm A');
+                                $('#blessing-time').append(`<option value="${time12Hour}">${time12Hour}</option>`);
+                            });
 
                             Swal.fire("Date Selected", `You have chosen ${selectedDay}, ${selectedDate} for a blessing with ${priestName}.`, "success");
                         }
@@ -941,7 +974,7 @@ $stmt_notif->close();
                 }
 
                 // Update priest name in service-info when select is changed
-                $('#blessing-form #priest_name').on('change', function () {
+                $('#blessing-form #priest_name').on('change', function() {
                     let priestName = $(this).val();
                     let serviceInfo = $('#service-info').html();
                     // Try to update only the priest line, or add it if not present
@@ -957,98 +990,125 @@ $stmt_notif->close();
                 });
 
 
-                $(document).ready(function () {
-                    $("#blessing-form").submit(function (e) {
-                        e.preventDefault();
-                        let formData = new FormData(this);
+                $("#blessing-form").submit(function(e) {
+                    e.preventDefault();
+                    let formData = new FormData(this);
 
-                        let selectedDate = $("#service-info").text().replace("Selected Date:", "").trim();
-                        if (!selectedDate) {
-                            Swal.fire("Error", "Please select a blessing date first.", "error");
-                            return;
+                    let selectedDate = $("#service-info").text().replace("Selected Date:", "").trim();
+                    if (!selectedDate) {
+                        Swal.fire("Error", "Please select a blessing date first.", "error");
+                        return;
+                    }
+
+                    formData.append("blessing_date", selectedDate);
+
+                    // Disable button and show spinner
+                    let saveButton = $("#save-blessing");
+                    saveButton.prop("disabled", true);
+                    saveButton.html('<i class="fa fa-spinner fa-spin"></i> Saving...');
+
+                    $.ajax({
+                        url: "save_blessing.php",
+                        type: "POST",
+                        data: formData,
+                        contentType: false,
+                        processData: false,
+                        success: function(response) {
+                            let res = JSON.parse(response);
+
+                            Swal.fire({
+                                title: res.status.toUpperCase(),
+                                text: res.message,
+                                icon: res.status
+                            }).then(() => {
+                                if (res.status === "success") {
+                                    $("#blessing-form")[0].reset();
+                                }
+                            });
+                        },
+                        error: function() {
+                            Swal.fire("Error", "Something went wrong. Please try again.", "error");
+                        },
+                        complete: function() {
+                            // Re-enable button and restore original text after SweetAlert is closed
+                            saveButton.prop("disabled", false);
+                            saveButton.html("Save Blessing");
                         }
-
-                        formData.append("blessing_date", selectedDate);
-
-                        // Disable button and show spinner
-                        let saveButton = $("#save-blessing");
-                        saveButton.prop("disabled", true);
-                        saveButton.html('<i class="fa fa-spinner fa-spin"></i> Saving...');
-
-                        $.ajax({
-                            url: "save_blessing.php",
-                            type: "POST",
-                            data: formData,
-                            contentType: false,
-                            processData: false,
-                            success: function (response) {
-                                let res = JSON.parse(response);
-
-                                Swal.fire({
-                                    title: res.status.toUpperCase(),
-                                    text: res.message,
-                                    icon: res.status
-                                }).then(() => {
-                                    if (res.status === "success") {
-                                        $("#blessing-form")[0].reset();
-                                    }
-                                });
-                            },
-                            error: function () {
-                                Swal.fire("Error", "Something went wrong. Please try again.", "error");
-                            },
-                            complete: function () {
-                                // Re-enable button and restore original text after SweetAlert is closed
-                                saveButton.prop("disabled", false);
-                                saveButton.html("Save Blessing");
-                            }
-                        });
                     });
                 });
 
 
-                $('#pamisa-form').submit(function (e) {
+                $('#pamisa-form').submit(function(e) {
                     e.preventDefault();
                     $('#loading-spinner').css('display', 'flex');
 
-                    let data = {
-                        name_of_intended: $('#name-of-intended').val(),
-                        name_of_requestor: $('#name-of-requestor').val(),
-                        pamisa_type: $('#pamisa-type').val(),
-                        selected_date: $('#service-info').text().match(/\d{4}-\d{2}-\d{2}/)[0],
-                        selected_time: $('#pamisa-time').val()
-                    };
+                    let formData = new FormData();
+                    formData.append('name_of_intended', $('#name-of-intended').val().trim());
+                    formData.append('name_of_requestor', $('#name-of-requestor').val().trim());
+                    formData.append('pamisa_type', $('#pamisa-type').val());
+                    formData.append('selected_date', $('#service-info').text().match(/\d{4}-\d{2}-\d{2}/)[0]);
+                    formData.append('selected_time', $('#pamisa-time').val());
+                    formData.append('gcash_receipt', $('#gcash-receipt')[0].files[0]);
 
-                    $.post('save_pamisa.php', data, function (response) {
-                        let res = JSON.parse(response);
-                        console.log(res);
-                        
+                    // Client-side validation
+                    if (!formData.get('name_of_intended') || !formData.get('name_of_requestor') || !formData.get('pamisa_type') || !formData.get('selected_time')) {
                         $('#loading-spinner').hide();
+                        Swal.fire("Error", "Please fill out all required fields.", "error");
+                        return;
+                    }
+                    if (!formData.get('gcash_receipt')) {
+                        $('#loading-spinner').hide();
+                        Swal.fire("Error", "Please upload a GCash receipt.", "error");
+                        return;
+                    }
 
+                    $.ajax({
+                        url: 'save_pamisa.php',
+                        type: 'POST',
+                        data: formData,
+                        contentType: false,
+                        processData: false,
+                        success: function(response) {
+                            let res;
+                            try {
+                                res = JSON.parse(response);
+                            } catch (e) {
+                                $('#loading-spinner').hide();
+                                Swal.fire("Error", "Invalid server response. Please try again.", "error");
+                                return;
+                            }
+                            $('#loading-spinner').hide();
 
-                        if (res.status === "success") {
-                            Swal.fire({
-                                icon: "success",
-                                title: "Success",
-                                text: res.message
-                            }).then(() => {
-                                $('#proceed-payment').show();
-                                $('#calendar').fullCalendar('refetchEvents');
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: "error",
-                                title: "Error",
-                                text: res.message
-                            });
+                            if (res.status === "success") {
+                                Swal.fire({
+                                    icon: "success",
+                                    title: "Success",
+                                    text: res.message
+                                }).then(() => {
+                                    $('#proceed-payment').show();
+                                    if ($.fn.fullCalendar) {
+                                        $('#calendar').fullCalendar('refetchEvents');
+                                    } else {
+                                        console.warn('FullCalendar is not initialized.');
+                                    }
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: "error",
+                                    title: "Error",
+                                    text: res.message
+                                });
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            $('#loading-spinner').hide();
+                            Swal.fire("Oops...", "Something went wrong. Please try again!", "error");
+                            console.error('AJAX error:', status, error);
                         }
-                    }).fail(function () {
-                        $('#loading-spinner').hide();
-                        Swal.fire("Oops...", "Something went wrong. Please try again!", "error");
                     });
                 });
 
-                $('#baptismBtn').click(function () {
+                $('#baptismBtn').click(function() {
                     $('#pamisa-form').hide();
                     $('#baptism-form').show();
                     $('#blessing-form').hide();
@@ -1058,7 +1118,7 @@ $stmt_notif->close();
                     renderCalendar();
                 });
 
-                $('#blessing').click(function () {
+                $('#blessing').click(function() {
                     $('#pamisa-form, #baptism-form').hide();
                     $('#blessing-form').show();
                     $('#service-info').html('<strong>Service:</strong> Blessing<br>Please select a date.');
@@ -1076,7 +1136,7 @@ $stmt_notif->close();
                 });
 
                 // Re-render calendar when priest is selected
-                $('#blessing-form #priest_name').on('change', function () {
+                $('#blessing-form #priest_name').on('change', function() {
                     if ($('#blessing-form').is(':visible')) {
                         $('#calendar').fullCalendar('destroy');
                         var priestName = $(this).val();
@@ -1092,7 +1152,7 @@ $stmt_notif->close();
                 });
 
 
-                $('#addMore').click(function () {
+                $('#addMore').click(function() {
                     $('#ninongNinangFields').append(`
                 <div>
                     <input type="text" name="ninong_ninang[]" class="input-field" placeholder="Enter name" required> 
@@ -1101,17 +1161,17 @@ $stmt_notif->close();
             `);
                 });
 
-                $(document).on("click", ".remove", function () {
+                $(document).on("click", ".remove", function() {
                     $(this).parent().remove();
                 });
 
 
-                $('#baptism-form').submit(function (e) {
+                $('#baptism-form').submit(function(e) {
                     e.preventDefault();
                     $('#loading-spinner').css('display', 'flex');
 
                     let ninongsNinangs = [];
-                    $('input[name="ninong_ninang[]"]').each(function () {
+                    $('input[name="ninong_ninang[]"]').each(function() {
                         ninongsNinangs.push($(this).val());
                     });
 
@@ -1130,7 +1190,7 @@ $stmt_notif->close();
                         type: 'POST',
                         data: JSON.stringify(data),
                         contentType: "application/json",
-                        success: function (response) {
+                        success: function(response) {
                             $('#loading-spinner').hide();
                             let res;
                             let additionalNinongs = Math.max(0, ninongsNinangs.length - 2);
@@ -1168,7 +1228,7 @@ $stmt_notif->close();
                                 });
                             }
                         },
-                        error: function () {
+                        error: function() {
                             $('#loading-spinner').hide();
                             Swal.fire("Oops...", "Something went wrong. Please try again!", "error");
                         }
@@ -1178,23 +1238,23 @@ $stmt_notif->close();
 
 
 
-                $('#proceed-payment-baptism').click(function () {
+                $('#proceed-payment-baptism').click(function() {
                     $('#payment-modal-baptism').fadeIn();
                 });
 
-                $('#close-modal-baptism').click(function () {
+                $('#close-modal-baptism').click(function() {
                     $('#payment-modal-baptism').fadeOut();
                 });
 
-                $('#proceed-payment').click(function () {
+                $('#proceed-payment').click(function() {
                     $('#payment-modal').fadeIn();
                 });
 
-                $('#close-modal').click(function () {
+                $('#close-modal').click(function() {
                     $('#payment-modal').fadeOut();
                 });
 
-                $('#submit-payment').click(function () {
+                $('#submit-payment').click(function() {
                     let fileInput = $('#gcash-receipt')[0].files[0];
                     if (!fileInput) {
                         Swal.fire("Error", "Please upload a GCash receipt.", "error");
@@ -1212,18 +1272,18 @@ $stmt_notif->close();
                         data: formData,
                         processData: false,
                         contentType: false,
-                        success: function (response) {
+                        success: function(response) {
                             $('#loading-spinner').hide();
                             Swal.fire("Payment Submitted", "Your payment has been received. Please check your email.", "success");
                         },
-                        error: function () {
+                        error: function() {
                             $('#loading-spinner').hide();
                             Swal.fire("Oops...", "Something went wrong. Please try again!", "error");
                         }
                     });
                 });
 
-                $('#submit-payment-baptism').click(function () {
+                $('#submit-payment-baptism').click(function() {
                     let fileInput = $('#gcash-receipt-baptism')[0].files[0];
                     if (!fileInput) {
                         Swal.fire("Error", "Please upload a GCash receipt for Baptism.", "error");
@@ -1241,7 +1301,7 @@ $stmt_notif->close();
                         data: formData,
                         processData: false,
                         contentType: false,
-                        success: function (response) {
+                        success: function(response) {
                             $('#loading-spinner').hide();
 
                             try {
@@ -1260,7 +1320,7 @@ $stmt_notif->close();
                                 Swal.fire("Error", "Invalid response from the server. Please contact support.", "error");
                             }
                         },
-                        error: function (xhr, status, error) {
+                        error: function(xhr, status, error) {
                             $('#loading-spinner').hide();
                             console.error("AJAX Error:", error);
                             Swal.fire("Oops...", "Something went wrong. Please try again!", "error");
@@ -1277,10 +1337,10 @@ $stmt_notif->close();
 
                 $('#calendar').fullCalendar({
                     selectable: true,
-                    select: function (start) {
+                    select: function(start) {
                         let selectedDate = start.format('YYYY-MM-DD');
 
-                        fetchAvailableSlots(selectedDate).done(function (data) {
+                        fetchAvailableSlots(selectedDate).done(function(data) {
                             if (data.slots_remaining > 0) {
                                 $('#service-info').html(`<strong>Selected Date:</strong> ${selectedDate} (Slots left: ${data.slots_remaining})`);
                             } else {
@@ -1294,12 +1354,12 @@ $stmt_notif->close();
         </script>
 
         <script>
-            $(document).ready(function () {
-                $('#notification-link').on('click', function (e) {
+            $(document).ready(function() {
+                $('#notification-link').on('click', function(e) {
                     $.ajax({
                         url: 'clear_notifications.php',
                         method: 'POST',
-                        success: function () {
+                        success: function() {
                             $('.notification-badge').fadeOut();
                         }
                     });
