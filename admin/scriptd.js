@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Retrieve sidebar state from localStorage
     let isSidebarExpanded = localStorage.getItem("sidebarExpanded") === "true";
-
+    console.log(isSidebarExpanded);
     function updateSidebarState(expanded) {
         if (expanded) {
             nav.classList.add("show");

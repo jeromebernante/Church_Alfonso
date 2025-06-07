@@ -6,6 +6,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['requestId'])) {
     $nameOfBlessed = $_POST['name_of_blessed'];
     $typeOfBlessing = $_POST['type_of_blessing'];
     $blessingTime = $_POST['blessing_time'];
+    $amount = $_POST['amount'];
+    $status = $_POST['status'];
 
     $queryCheck = "SELECT 'blessings_requests' AS table_name FROM blessings_requests WHERE id = ?
                    UNION 
@@ -18,9 +20,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['requestId'])) {
     if ($row = $resultCheck->fetch_assoc()) {
         $tableName = $row['table_name'];
 
-        $queryUpdate = "UPDATE $tableName SET name_of_blessed = ?, type_of_blessing = ?, blessing_time = ? WHERE id = ?";
+        $queryUpdate = "UPDATE $tableName SET name_of_blessed = ?, type_of_blessing = ?, blessing_time = ?, amount = ?, status = ? WHERE id = ?";
         $stmtUpdate = $conn->prepare($queryUpdate);
-        $stmtUpdate->bind_param("sssi", $nameOfBlessed, $typeOfBlessing, $blessingTime, $requestId);
+        $stmtUpdate->bind_param("sssisi", $nameOfBlessed, $typeOfBlessing, $blessingTime, $amount, $status, $requestId);
 
         if ($stmtUpdate->execute()) {
             echo "Details updated successfully.";

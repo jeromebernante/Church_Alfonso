@@ -17,19 +17,33 @@ if (!isset($_SESSION['user_id'])) {
 
 $data = json_decode(file_get_contents("php://input"), true);
 
-if (!$data) {
-    echo json_encode(["status" => "error", "message" => "Invalid data."]);
+if (!$data || empty($data['baptized_name']) || empty($data['parents_name']) || empty($data['ninongs_ninangs']) || empty($data['selected_date'])) {
+    echo json_encode(["status" => "error", "message" => "Invalid or incomplete data."]);
     exit();
 }
 
 $user_id = $_SESSION['user_id'];
-$baptized_name = $data['baptized_name'];
-$parents_name = $data['parents_name'];
+$baptized_name = trim($data['baptized_name']);
+$parents_name = json_encode($data['parents_name']); // Store as JSON since it's an array
 $ninongs_ninangs = json_encode($data['ninongs_ninangs']);
 $selected_date = $data['selected_date'];
 
+// Validate input lengths
+if (strlen($baptized_name) > 255 || count($data['parents_name']) > 2 || count($data['ninongs_ninangs']) < 2) {
+    echo json_encode(["status" => "error", "message" => "Invalid input lengths."]);
+    exit();
+}
+
+// Validate date format
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $selected_date)) {
     echo json_encode(["status" => "error", "message" => "Invalid date format."]);
+    exit();
+}
+
+// Validate that the date is not in the past
+$current_date = date('Y-m-d');
+if ($selected_date < $current_date) {
+    echo json_encode(["status" => "error", "message" => "Selected date cannot be in the past."]);
     exit();
 }
 
@@ -78,7 +92,7 @@ if ($row['slots_remaining'] <= 0) {
 
 $conn->begin_transaction();
 
-$status = ($priest) ? "Pending" : "Accepted";
+$status = "Pending";
 
 $sql = "INSERT INTO baptism_requests (user_id, baptized_name, parents_name, ninongs_ninangs, selected_date, status) 
         VALUES (?, ?, ?, ?, ?, ?)";
@@ -118,12 +132,13 @@ if ($stmt->execute()) {
 
     // Send Confirmation Email
     $mail = new PHPMailer(true);
+    $email_status = "success";
     try {
         $mail->isSMTP();
         $mail->Host = 'smtp.gmail.com';
         $mail->SMTPAuth = true;
-        $mail->Username = 'parishoftheholycrossonline@gmail.com'; 
-        $mail->Password = 'xbfh zzfy ibtw klre'; 
+        $mail->Username = 'parishoftheholycrossonline@gmail.com';
+        $mail->Password = 'xbfh zzfy ibtw klre';
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = 587;
 
@@ -140,7 +155,7 @@ if ($stmt->execute()) {
                 </div>
         
                 <div style='background: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 5px rgba(0,0,0,0.1);'>
-                    <p style='font-size: 16px; color: #333;'>Dear <strong>$parents_name</strong>,</p>
+                    <p style='font-size: 16px; color: #333;'>Dear <strong>" . implode(", ", json_decode($parents_name, true)) . "</strong>,</p>
                     <p style='font-size: 16px; color: #555;'>Thank you for submitting a Baptism request. Here are the details of your request:</p>
         
                     <table style='width: 100%; border-collapse: collapse; margin-top: 10px;'>
@@ -150,7 +165,7 @@ if ($stmt->execute()) {
                         </tr>
                         <tr>
                             <td style='padding: 10px; font-weight: bold; color: #2c3e50;'>Parents' Names:</td>
-                            <td style='padding: 10px; color: #34495e;'>$parents_name</td>
+                            <td style='padding: 10px; color: #34495e;'>" . implode(", ", json_decode($parents_name, true)) . "</td>
                         </tr>
                         <tr>
                             <td style='padding: 10px; font-weight: bold; color: #2c3e50;'>Ninongs & Ninangs:</td>
@@ -170,9 +185,13 @@ if ($stmt->execute()) {
         $mail->send();
     } catch (Exception $e) {
         error_log("Email sending failed: " . $mail->ErrorInfo);
+        $email_status = "failed";
     }
 
-    echo json_encode(["status" => "success", "message" => "Baptism request saved successfully! Confirmation email sent."]);
+    echo json_encode([
+        "status" => "success",
+        "message" => "Baptism request saved successfully!" . ($email_status === "failed" ? " However, the confirmation email could not be sent." : " Confirmation email sent.")
+    ]);
 } else {
     $conn->rollback();
     echo json_encode(["status" => "error", "message" => "Failed to save request."]);

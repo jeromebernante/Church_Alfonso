@@ -1,5 +1,5 @@
 <?php
-include 'db_connection.php';
+include '../db_connection.php';
 
 if (isset($_POST['requestId']) && isset($_POST['type'])) {
     $requestId = $_POST['requestId'];
@@ -8,7 +8,7 @@ if (isset($_POST['requestId']) && isset($_POST['type'])) {
     if ($type === "Online") {
         $query = "SELECT * FROM pamisa_requests WHERE id = ?";
     } else {
-        $query = "SELECT * FROM walkin_pamisa WHERE id = ?";
+        $query = "SELECT * FROM pamisa_requests WHERE id = ? AND user_id = 0";
     }
 
     $stmt = $conn->prepare($query);
@@ -17,7 +17,7 @@ if (isset($_POST['requestId']) && isset($_POST['type'])) {
     $result = $stmt->get_result();
 
     if ($row = $result->fetch_assoc()) {
-        $updateUrl = ($type === "Online") ? "update_pamisa.php" : "update_walkin_pamisa.php";
+        $updateUrl = ($type === "Online") ? "update_pamisa.php" : "update_pamisa.php";
 
         echo "<div class='pamisa-details'>";
         echo "<h2>Pamisa Details</h2>";
@@ -28,13 +28,19 @@ if (isset($_POST['requestId']) && isset($_POST['type'])) {
         echo "<p><strong>Pamisa Type:</strong> <input type='text' name='pamisa_type' value='" . htmlspecialchars($row['pamisa_type']) . "' readonly></p>";
         echo "<p><strong>Pamisa Time:</strong> <input type='text' name='selected_time' value='" . date("h:i A", strtotime($row['selected_time'])) . "' readonly></p>";
         echo "<p><strong>Price:</strong> ₱<input type='text' name='price' value='" . number_format($row['price'], 2) . "' readonly></p>";
-        echo "<p><strong>Status:</strong> <input type='text' name='status' value='" . htmlspecialchars($row['status']) . "' readonly></p>";
+        echo "<p><strong>Status:</strong> <select name='status'>";
+        $options = ['Pending', 'Accepted'];
+        foreach ($options as $option) {
+            $selected = ($row['status'] == $option) ? 'selected' : '';
+            echo "<option value='" . htmlspecialchars($option) . "' $selected>$option</option>";
+        }
+        echo "</select></p>";
 
         if (!empty($row['payment_receipt'])) {
             if ($type === "Online") {
-                echo "<p><strong>Receipt:</strong> <a href='data:image/png;base64," . base64_encode($row['payment_receipt']) . "' target='_blank' class='receipt-link'>View Receipt</a></p>";
+               echo "<p><strong>Receipt:</strong> <a href='../" . htmlspecialchars($row['payment_receipt']) . "' target='_blank' class='receipt-link'>View Receipt</a></p>";
             } else {
-                echo "<p><strong>Receipt:</strong> <a href='" . htmlspecialchars($row['payment_receipt']) . "' target='_blank' class='receipt-link'>View Receipt</a></p>";
+                echo "<p><strong>Receipt:</strong> <a href='../" . htmlspecialchars($row['payment_receipt']) . "' target='_blank' class='receipt-link'>View Receipt</a></p>";
             }
         } else {
             echo "<p class='not-found'>No receipt uploaded.</p>";
@@ -180,7 +186,7 @@ $(document).ready(function() {
         background-color: #b71c1c;
     }
 
-    input[type="text"] {
+    input[type="text"], select {
         width: 100%;
         padding: 8px;
         font-size: 14px;

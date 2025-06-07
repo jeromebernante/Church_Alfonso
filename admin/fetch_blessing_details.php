@@ -11,10 +11,6 @@ if (isset($_POST['requestId'])) {
     $result = $stmt->get_result();
 
     if ($row = $result->fetch_assoc()) {
-        $receiptPath = preg_replace('/\/?admin\//', '', $row['receipt_path']);
-        $baseUrl = "http://localhost/Church/";
-        $finalReceiptPath = $baseUrl . $receiptPath;
-
         echo "<div class='blessing-details'>";
         echo "<h2>Blessing Details</h2>";
 
@@ -23,7 +19,22 @@ if (isset($_POST['requestId'])) {
         echo "<p><strong>Name of Blessed:</strong> <input type='text' name='name_of_blessed' value='" . htmlspecialchars($row['name_of_blessed']) . "' readonly></p>";
         echo "<p><strong>Type of Blessing:</strong> <input type='text' name='type_of_blessing' value='" . htmlspecialchars($row['type_of_blessing']) . "' readonly></p>";
         echo "<p><strong>Blessing Time:</strong> <input type='text' name='blessing_time' value='" . htmlspecialchars($row['blessing_time']) . "' readonly></p>";
-        echo "<p><strong>Receipt:</strong> <a href='" . htmlspecialchars($finalReceiptPath) . "' target='_blank' class='receipt-link'>View Receipt</a></p>";
+        echo "<p><strong>Amount:</strong> <input type='text' name='amount' value='" . htmlspecialchars($row['amount']) . "'></p>";
+        
+        echo "<p><strong>Status:</strong><br><select name='status'>";
+        $options = ['Pending', 'Accepted'];
+        foreach ($options as $option) {
+            $selected = ($row['status'] == $option) ? 'selected' : '';
+            echo "<option value='" . htmlspecialchars($option) . "' $selected>$option</option>";
+        }
+        echo "</select></p>";
+
+        // Updated receipt display logic
+        if (!empty($row['receipt_path'])) {
+            echo "<p><strong>Receipt:</strong> <a href='../" . htmlspecialchars($row['receipt_path']) . "' target='_blank' class='receipt-link'>View Receipt</a></p>";
+        } else {
+            echo "<p class='not-found'>No receipt uploaded.</p>";
+        }
 
         echo "<button type='button' id='editButton'>Edit</button>";
         echo "<button type='submit' id='saveButton' style='display:none;'>Save Changes</button>";
@@ -36,6 +47,7 @@ if (isset($_POST['requestId'])) {
     }
 }
 ?>
+
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -162,7 +174,7 @@ $(document).ready(function() {
         background-color: #b71c1c;
     }
 
-    input[type="text"] {
+    input[type="text"], select{
         width: 100%;
         padding: 8px;
         font-size: 14px;

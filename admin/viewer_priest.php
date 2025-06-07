@@ -23,12 +23,24 @@ include 'db_connection.php';
 
 <body id="bodyTag">
     <header class="header" id="header">
-        <div class="header_toggle">
-            <i class='bx bx-menu' id="header-toggle"></i>
-        </div>
+
     </header>
     <?php include 'viewer_sidebar.php'; ?><br>
-    <div class="admin-greeting">Good Day, <?php echo $_SESSION['username'] ?> !</div>
+    <?php
+    // Assuming the username is stored in the session
+    $username = $_SESSION['username'];
+    $name = '';
+
+    if ($username === 'frroxas') {
+        $name = 'Rev. Fr. Apolinario Roxas, Jr.';
+    } elseif ($username === 'frroel') {
+        $name = 'Rev. Fr. Roel Aldwin C. Valmadrid';
+    } else {
+        $name = 'Guest'; // Fallback for unknown usernames
+    }
+    ?>
+
+    <div class="admin-greeting">Good Day, <?php echo $name; ?>!</div>
     <div id="datetime" class="datetime"></div>
     <section class="about-us">
         <h2>Priest Schedule</h2>
@@ -108,13 +120,21 @@ include 'db_connection.php';
 
         function updateDateTime() {
             let now = new Date();
-            let options = { timeZone: 'Asia/Manila', hour12: true, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            let options = {
+                timeZone: 'Asia/Manila',
+                hour12: true,
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
             document.getElementById('datetime').innerHTML = new Intl.DateTimeFormat('en-PH', options).format(now);
         }
 
         updateDateTime();
         setInterval(updateDateTime, 60000);
-
     </script>
 
     <script>
@@ -136,7 +156,6 @@ include 'db_connection.php';
 
 
         loadPriests();
-
     </script>
 
 

@@ -98,16 +98,28 @@ include 'db_connection.php';
 
 <body id="bodyTag">
     <header class="header" id="header">
-        <div class="header_toggle">
-            <i class='bx bx-menu' id="header-toggle"></i>
-        </div>
+
     </header>
     <?php include 'viewer_sidebar.php'; ?><br>
+
+    <?php
+    // Assuming the username is stored in the session
+    $username = $_SESSION['username'];
+    $name = '';
+
+    if ($username === 'frroxas') {
+        $name = 'Rev. Fr. Apolinario Roxas, Jr.';
+    } elseif ($username === 'frroel') {
+        $name = 'Rev. Fr. Roel Aldwin C. Valmadrid';
+    } else {
+        $name = 'Guest'; // Fallback for unknown usernames
+    }
+    ?>
 
     <div class="admin-header"
         style="display: flex; justify-content: space-between; align-items: center; background: #f4f6f8; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px;">
         <div class="admin-greeting" style="font-size: 1.4em; font-weight: bold; color: #333;">
-            Good Day, <?php echo $_SESSION['username']; ?>!
+            Good Day, <?php echo $name; ?>!
         </div>
         <button id="show-history"
             style="padding: 10px 18px; background-color: #4A90E2; color: white; border: none; border-radius: 8px; font-size: 1em; cursor: pointer; transition: background-color 0.3s;">
@@ -131,8 +143,8 @@ include 'db_connection.php';
     <div id="history-container"></div>
 
     <script>
-        $(document).ready(function () {
-            $('#show-history').click(function () {
+        $(document).ready(function() {
+            $('#show-history').click(function() {
                 $('#history-container').slideToggle(300);
                 $(this).toggleClass('active');
                 $(this).text($(this).hasClass('active') ? 'Close History' : 'Show History');
@@ -141,7 +153,7 @@ include 'db_connection.php';
                     $.ajax({
                         url: 'fetch_history.php',
                         type: 'GET',
-                        success: function (response) {
+                        success: function(response) {
                             $('#history-container').html(response);
                         }
                     });
@@ -236,14 +248,22 @@ include 'db_connection.php';
     <h2 style="text-align: center;">Upcoming Blessings</h2>
     <div id="blessingContainer">
         <?php
+        $today = date("Y-m-d");
+        $priest_name = $name; // $name is set earlier based on the session username (e.g., 'Rev. Fr. Apolinario Roxas, Jr.')
+
+        // Query to fetch blessings, filtering by priest_name only for blessings_requests
         $query = "
-    SELECT id, name_of_requestor, blessing_date, 'Online' AS type FROM blessings_requests WHERE blessing_date >= ?
-    UNION
-    SELECT id, name_of_requestor, blessing_date, 'Walk-in' AS type FROM walkin_blessing WHERE blessing_date >= ?
-    ORDER BY blessing_date ASC";
+            SELECT id, name_of_requestor, blessing_date, 'Online' AS type 
+            FROM blessings_requests 
+            WHERE blessing_date >= ? AND priest_name = ?
+            UNION
+            SELECT id, name_of_requestor, blessing_date, 'Walk-in' AS type 
+            FROM walkin_blessing 
+            WHERE blessing_date >= ?
+            ORDER BY blessing_date ASC";
 
         $stmt = $conn->prepare($query);
-        $stmt->bind_param("ss", $today, $today);
+        $stmt->bind_param("sss", $today, $priest_name, $today);
         $stmt->execute();
         $result = $stmt->get_result();
 
@@ -262,7 +282,7 @@ include 'db_connection.php';
                 echo "</div>";
             }
         } else {
-            echo "<p>No upcoming Blessing requests.</p>";
+            echo "<p>No upcoming Blessing requests assigned to you or scheduled walk-in blessings.</p>";
         }
         ?>
     </div>
@@ -306,22 +326,30 @@ include 'db_connection.php';
     <h2 style="text-align: center;">Upcoming Weddings</h2>
     <div id="weddingContainer">
         <?php
+        $today = date("Y-m-d");
+        $priest_name = $name; // $name is set earlier based on the session username (e.g., 'Rev. Fr. Apolinario Roxas, Jr.')
+
+        // Query to fetch weddings, filtering by priest_name only for wedding_requests
         $query = "
-    SELECT id, bride_name, groom_name, wedding_date, contact, 'Online' AS type FROM wedding_requests WHERE wedding_date >= ?
-    UNION
-    SELECT id, bride_name, groom_name, wedding_date, contact, 'Walk-in' AS type FROM walkin_wedding_requests WHERE wedding_date >= ?
-    ORDER BY wedding_date ASC";
+            SELECT id, bride_name, groom_name, wedding_date, contact, 'Online' AS type 
+            FROM wedding_requests 
+            WHERE wedding_date >= ? AND priest_name = ?
+            UNION
+            SELECT id, bride_name, groom_name, wedding_date, contact, 'Walk-in' AS type 
+            FROM walkin_wedding_requests 
+            WHERE wedding_date >= ?
+            ORDER BY wedding_date ASC";
 
         $stmt = $conn->prepare($query);
-        $stmt->bind_param("ss", $today, $today);
+        $stmt->bind_param("sss", $today, $priest_name, $today);
         $stmt->execute();
         $result = $stmt->get_result();
 
         if ($result->num_rows > 0) {
             while ($row = $result->fetch_assoc()) {
                 $requestId = $row['id'];
-                $brideName = $row['bride_name'];
-                $groomName = $row['groom_name'];
+                $brideName = htmlspecialchars($row['bride_name']);
+                $groomName = htmlspecialchars($row['groom_name']);
                 $weddingDate = $row['wedding_date'];
                 $type = $row['type'];
 
@@ -333,8 +361,10 @@ include 'db_connection.php';
                 echo "</div>";
             }
         } else {
-            echo "<p>No upcoming Weddings.</p>";
+            echo "<p>No upcoming Wedding requests assigned to you or scheduled walk-in weddings.</p>";
         }
+
+        $stmt->close();
         ?>
     </div>
 
@@ -531,8 +561,10 @@ include 'db_connection.php';
             $.ajax({
                 url: "fetch_requests.php",
                 type: "POST",
-                data: { date: date },
-                success: function (response) {
+                data: {
+                    date: date
+                },
+                success: function(response) {
                     detailsContainer.html(response).slideDown();
                 }
             });
@@ -549,8 +581,11 @@ include 'db_connection.php';
             $.ajax({
                 url: "fetch_blessing_details.php",
                 type: "POST",
-                data: { requestId: requestId, type: type },
-                success: function (response) {
+                data: {
+                    requestId: requestId,
+                    type: type
+                },
+                success: function(response) {
                     detailsContainer.html(response).slideDown();
                 }
             });
@@ -567,12 +602,16 @@ include 'db_connection.php';
             $.ajax({
                 url: "fetch_pamisa_details.php",
                 type: "POST",
-                data: { requestId: requestId, type: type },
-                success: function (response) {
+                data: {
+                    requestId: requestId,
+                    type: type
+                },
+                success: function(response) {
                     detailsContainer.html(response).slideDown();
                 }
             });
         }
+
         function fetchWeddingDetails(requestId, type, element) {
             var detailsContainer = $(element).find(".details-container");
 
@@ -584,8 +623,11 @@ include 'db_connection.php';
             $.ajax({
                 url: "fetch_wedding_details.php",
                 type: "POST",
-                data: { requestId: requestId, type: type },
-                success: function (response) {
+                data: {
+                    requestId: requestId,
+                    type: type
+                },
+                success: function(response) {
                     detailsContainer.html(response).slideDown();
                 }
             });
@@ -627,13 +669,21 @@ include 'db_connection.php';
 
         function updateDateTime() {
             let now = new Date();
-            let options = { timeZone: 'Asia/Manila', hour12: true, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            let options = {
+                timeZone: 'Asia/Manila',
+                hour12: true,
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
             document.getElementById('datetime').innerHTML = new Intl.DateTimeFormat('en-PH', options).format(now);
         }
 
         updateDateTime();
         setInterval(updateDateTime, 60000);
-
     </script>
     <style>
         .header {

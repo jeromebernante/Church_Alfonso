@@ -1,80 +1,65 @@
 <?php
 session_start();
-include 'db_connection.php'; 
+include 'db_connection.php';
 
 if (!$conn) {
     die("Database connection failed: " . mysqli_connect_error());
 }
 
-function getWeekDates($year, $week) {
-    $weekStart = strtotime("{$year}-W{$week}-1"); 
-    $weekEnd = strtotime("+6 days", $weekStart);
-    return [date("Y-m-d", $weekStart), date("Y-m-d", $weekEnd)];
-}
-
-function getWeeklyEarnings($conn, $table, $date_column, $count_column, $fixed_price = null) {
-    $sql = "SELECT YEARWEEK($date_column, 1) AS week, 
-                   " . ($fixed_price ? "COUNT($count_column) * $fixed_price" : "SUM($count_column)") . " AS total_earnings
+function getDateRangeData($conn, $table, $date_column, $count_column, $start_date, $end_date, $fixed_price = null)
+{
+    $sql = "SELECT 
+                COUNT($count_column) AS event_count,
+                " . ($fixed_price ? "COUNT($count_column) * $fixed_price" : "SUM($count_column)") . " AS total_earnings
             FROM $table
-            WHERE YEAR($date_column) = YEAR(CURDATE()) 
-            GROUP BY week
-            ORDER BY week ASC";
+            WHERE $date_column BETWEEN ? AND ?";
 
     $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ss", $start_date, $end_date);
     $stmt->execute();
     $result = $stmt->get_result();
+    $data = $result->fetch_assoc();
 
-    $weekly_earnings = [];
-    while ($row = $result->fetch_assoc()) {
-        $weekNum = substr($row['week'], 4);
-        list($start_date, $end_date) = getWeekDates(date("Y"), $weekNum);
-        $weekLabel = "Week $weekNum ($start_date to $end_date)";
-        $weekly_earnings[$weekLabel] = $row['total_earnings'] ?? 0;
-    }
-    return $weekly_earnings;
+    return [
+        'count' => $data['event_count'] ?? 0,
+        'earnings' => $data['total_earnings'] ?? 0
+    ];
 }
 
-$weekly_baptism = getWeeklyEarnings($conn, 'baptism_requests', 'selected_date', 'price');
-$weekly_pamisa = getWeeklyEarnings($conn, 'pamisa_requests', 'selected_date', 'price');
-$weekly_wedding = getWeeklyEarnings($conn, 'wedding_requests', 'wedding_date', 'id', 7000);
-$weekly_blessings = getWeeklyEarnings($conn, 'blessings_requests', 'blessing_date', 'id', 500);
+function getRequestDetails($conn, $table, $date_column, $start_date, $end_date)
+{
+    $sql = "SELECT * FROM $table WHERE $date_column BETWEEN ? AND ? ORDER BY $date_column ASC";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ss", $start_date, $end_date);
+    $stmt->execute();
+    return $stmt->get_result();
+}
 
-$all_weeks = array_unique(array_merge(
-    array_keys($weekly_baptism),
-    array_keys($weekly_pamisa),
-    array_keys($weekly_wedding),
-    array_keys($weekly_blessings)
-));
-sort($all_weeks);
+$start_date = isset($_POST['start_date']) ? $_POST['start_date'] : null;
+$end_date = isset($_POST['end_date']) ? $_POST['end_date'] : null;
 
-$total_earnings = array_sum($weekly_baptism) + array_sum($weekly_pamisa) + array_sum($weekly_wedding) + array_sum($weekly_blessings);
+$range_data = null;
+if ($start_date && $end_date) {
+    $baptism_data = getDateRangeData($conn, 'baptism_requests', 'selected_date', 'price', $start_date, $end_date);
+    $pamisa_data = getDateRangeData($conn, 'pamisa_requests', 'selected_date', 'price', $start_date, $end_date);
+    $wedding_data = getDateRangeData($conn, 'wedding_requests', 'wedding_date', 'id', $start_date, $end_date, 7000);
+    $blessings_data = getDateRangeData($conn, 'blessings_requests', 'blessing_date', 'id', $start_date, $end_date, 500);
 
-$sql_weekly = "SELECT SUM(price) AS weekly_total FROM (
-    SELECT price FROM baptism_requests WHERE YEARWEEK(selected_date, 1) = YEARWEEK(CURDATE(), 1)
-    UNION ALL
-    SELECT price FROM pamisa_requests WHERE YEARWEEK(selected_date, 1) = YEARWEEK(CURDATE(), 1)
-    UNION ALL
-    SELECT 7000 FROM wedding_requests WHERE YEARWEEK(wedding_date, 1) = YEARWEEK(CURDATE(), 1)
-    UNION ALL
-    SELECT 500 FROM blessings_requests WHERE YEARWEEK(blessing_date, 1) = YEARWEEK(CURDATE(), 1)
-) as earnings";
-$result_weekly = $conn->query($sql_weekly);
-$weekly_earnings = ($result_weekly->num_rows > 0) ? $result_weekly->fetch_assoc()['weekly_total'] : 0;
+    $range_data = [
+        'baptism' => $baptism_data,
+        'pamisa' => $pamisa_data,
+        'wedding' => $wedding_data,
+        'blessings' => $blessings_data,
+        'total_earnings' => $baptism_data['earnings'] + $pamisa_data['earnings'] + $wedding_data['earnings'] + $blessings_data['earnings']
+    ];
 
-$sql_monthly = "SELECT SUM(price) AS monthly_total FROM (
-    SELECT price FROM baptism_requests WHERE YEAR(selected_date) = YEAR(CURDATE()) AND MONTH(selected_date) = MONTH(CURDATE())
-    UNION ALL
-    SELECT price FROM pamisa_requests WHERE YEAR(selected_date) = YEAR(CURDATE()) AND MONTH(selected_date) = MONTH(CURDATE())
-    UNION ALL
-    SELECT 7000 FROM wedding_requests WHERE YEAR(wedding_date) = YEAR(CURDATE()) AND MONTH(wedding_date) = MONTH(CURDATE())
-    UNION ALL
-    SELECT 500 FROM blessings_requests WHERE YEAR(blessing_date) = YEAR(CURDATE()) AND MONTH(blessing_date) = MONTH(CURDATE())
-) as earnings";
-$result_monthly = $conn->query($sql_monthly);
-$monthly_earnings = ($result_monthly->num_rows > 0) ? $result_monthly->fetch_assoc()['monthly_total'] : 0;
+    $baptism_details = getRequestDetails($conn, 'baptism_requests', 'selected_date', $start_date, $end_date);
+    $pamisa_details = getRequestDetails($conn, 'pamisa_requests', 'selected_date', $start_date, $end_date);
+    $wedding_details = getRequestDetails($conn, 'wedding_requests', 'wedding_date', $start_date, $end_date);
+    $blessings_details = getRequestDetails($conn, 'blessings_requests', 'blessing_date', $start_date, $end_date);
+}
 
-
-$filtered_week = isset($_POST['filter_week']) ? $_POST['filter_week'] : null;
+$total_earnings = array_sum(array_column($range_data ?? [], 'earnings'));
 
 $sql_baptism = "SELECT SUM(price) AS total_baptism_earnings FROM baptism_requests";
 $result_baptism = $conn->query($sql_baptism);
@@ -104,71 +89,67 @@ $result_wedding = $conn->query($sql_wedding);
 $sql_blessings = "SELECT blessing_date, name_of_blessed, type_of_blessing, status FROM blessings_requests ORDER BY blessing_date ASC";
 $result_blessings = $conn->query($sql_blessings);
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $filter_date = isset($_POST['filter_date']) ? $_POST['filter_date'] : null;
-    $selected_table = isset($_POST['table']) ? $_POST['table'] : null;
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['filter_date']) && isset($_POST['table'])) {
+    $filter_date = $_POST['filter_date'];
+    $selected_table = $_POST['table'];
 
-    if (!$filter_date || !$selected_table) {
-        echo "<p> </p>";
+    $table_columns = [
+        'baptism_slots' => ['date', 'slots_remaining'],
+        'pamisa_requests' => ['selected_date', 'name_of_intended', 'pamisa_type', 'status'],
+        'wedding_requests' => ['wedding_date', 'bride_name', 'groom_name', 'status'],
+        'blessings_requests' => ['blessing_date', 'name_of_blessed', 'type_of_blessing', 'status']
+    ];
+
+    if (!isset($table_columns[$selected_table])) {
+        echo "<p>Invalid table selection.</p>";
     } else {
-        $table_columns = [
-            'baptism_slots' => ['date', 'slots_remaining'],
-            'pamisa_requests' => ['selected_date', 'name_of_intended', 'pamisa_type', 'status'],
-            'wedding_requests' => ['wedding_date', 'bride_name', 'groom_name', 'status'],
-            'blessings_requests' => ['blessing_date', 'name_of_blessed', 'type_of_blessing', 'status']
-        ];
+        $date_column = [
+            'baptism_slots' => 'date',
+            'pamisa_requests' => 'selected_date',
+            'wedding_requests' => 'wedding_date',
+            'blessings_requests' => 'blessing_date'
+        ][$selected_table];
 
-        if (!isset($table_columns[$selected_table])) {
-            echo "<p>Invalid table selection.</p>";
-        } else {
-            $date_column = [
-                'baptism_slots' => 'date',
-                'pamisa_requests' => 'selected_date',
-                'wedding_requests' => 'wedding_date',
-                'blessings_requests' => 'blessing_date'
-            ][$selected_table];
+        $columns = implode(", ", $table_columns[$selected_table]);
+        $sql = "SELECT $columns FROM $selected_table WHERE $date_column = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("s", $filter_date);
+        $stmt->execute();
+        $result = $stmt->get_result();
 
-            $columns = implode(", ", $table_columns[$selected_table]);
-            $sql = "SELECT $columns FROM $selected_table WHERE $date_column = ?";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("s", $filter_date);
-            $stmt->execute();
-            $result = $stmt->get_result();
+        if ($result->num_rows > 0) {
+            echo "<h3>Results for " . ucfirst(str_replace("_", " ", $selected_table)) . " on " . $filter_date . "</h3>";
+            echo "<div id='printSection'><table border='1'><tr>";
 
-            if ($result->num_rows > 0) {
-                echo "<h3>Results for " . ucfirst(str_replace("_", " ", $selected_table)) . " on " . $filter_date . "</h3>";
-                echo "<div id='printSection'><table border='1'><tr>";
+            foreach ($table_columns[$selected_table] as $col) {
+                echo "<th>" . ucfirst(str_replace("_", " ", $col)) . "</th>";
+            }
+            echo "</tr>";
 
+            while ($row = $result->fetch_assoc()) {
+                echo "<tr>";
                 foreach ($table_columns[$selected_table] as $col) {
-                    echo "<th>" . ucfirst(str_replace("_", " ", $col)) . "</th>";
+                    echo "<td>" . htmlspecialchars($row[$col]) . "</td>";
                 }
                 echo "</tr>";
-
-                while ($row = $result->fetch_assoc()) {
-                    echo "<tr>";
-                    foreach ($table_columns[$selected_table] as $col) {
-                        echo "<td>" . htmlspecialchars($row[$col]) . "</td>";
-                    }
-                    echo "</tr>";
-                }
-                echo "</table></div>";
-
-                echo "<button onclick='printFilteredResults()'>Print</button>";
-            } else {
-                echo "<p>No records found for the selected date.</p>";
             }
+            echo "</table></div>";
 
-            $stmt->close();
+            echo "<button onclick='printFilteredResults()'>Print</button>";
+        } else {
+            echo "<p>No records found for the selected date.</p>";
         }
+
+        $stmt->close();
     }
 }
 
 $conn->close();
 ?>
 
-
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -181,462 +162,487 @@ $conn->close();
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="scriptd.js"></script>
 </head>
+
 <body id="bodyTag">
     <header class="header" id="header">
-        <div class="header_toggle">
-            <i class='bx bx-menu' id="header-toggle"></i>
-        </div>
     </header>
     <?php include 'sidebar.php'; ?><br>
-    
+
     <div class="admin-greeting">Good Day, Admin!</div>
-    <div id="datetime" class="datetime"></div> 
-    
+    <div id="datetime" class="datetime"></div>
+
     <section class="about-us">
         <h2 style="color: black; font-size: 20px;">Your Reports</h2>
         <p class="justified">
             The Reports section allows you to access and review detailed records of service reservations, church events, and other administrative activities. Stay informed and keep track of essential parish data efficiently.
         </p>
     </section>
-    
-    
-    <center><h2 style="color: black;">Earnings Overview</h2><br></center>
 
-<!-- Print Button -->
-<center><button onclick="printEarnings()">Print Summary</button></center>
+    <center>
+        <h2 style="color: black;">Earnings Overview</h2><br>
+    </center>
 
-<section class="overview-summary">
-    <div class="overview-boxes">
-        <div class="box">
-            <h3>All Total Earnings</h3>
-            <p>₱<?php echo number_format($total_earnings, 2); ?></p>
-        </div>
-        <div class="box">
-            <h3>Current Week Earnings</h3>
-            <p>₱<?php echo number_format($weekly_earnings, 2); ?></p>
-        </div>
-        <div class="box">
-            <h3>Current Month Earnings</h3>
-            <p>₱<?php echo number_format($monthly_earnings, 2); ?></p>
-        </div>
-    </div>
-</section>
+    <center><button onclick="printEarnings()">Print Summary</button></center>
 
-<section class="overview-section">
-    <div class="overview-boxes">
-        <div class="box">
-            <h3>Total Baptism Earnings</h3>
-            <p>₱<?php echo number_format($baptism_earnings, 2); ?></p>
+    <section class="overview-summary">
+        <div class="overview-boxes">
+            <div class="box">
+                <h3>All Total Earnings</h3>
+                <p>₱<?php echo number_format($total_earnings, 2); ?></p>
+            </div>
+            <div class="box">
+                <h3>Total Baptism Earnings</h3>
+                <p>₱<?php echo number_format($baptism_earnings, 2); ?></p>
+            </div>
+            <div class="box">
+                <h3>Total Pamisa Earnings</h3>
+                <p>₱<?php echo number_format($pamisa_earnings, 2); ?></p>
+            </div>
+            <div class="box">
+                <h3>Total Wedding Earnings</h3>
+                <p>₱<?php echo number_format($wedding_earnings, 2); ?></p>
+            </div>
+            <div class="box">
+                <h3>Total Blessings Earnings</h3>
+                <p>₱<?php echo number_format($blessings_earnings, 2); ?></p>
+            </div>
         </div>
-        <div class="box">
-            <h3>Total Pamisa Earnings</h3>
-            <p>₱<?php echo number_format($pamisa_earnings, 2); ?></p>
-        </div>
-        <div class="box">
-            <h3>Total Wedding Earnings</h3>
-            <p>₱<?php echo number_format($wedding_earnings, 2); ?></p>
-        </div>
-        <div class="box">
-            <h3>Total Blessings Earnings</h3>
-            <p>₱<?php echo number_format($blessings_earnings, 2); ?></p>
-        </div>
-    </div>
-    <p style="margin-top: 10px; color: red; font-weight: bold;">Note: Please verify the uploaded receipts for blessings requests.</p>
-</section>
+        <center style="margin-top: 100px;">
+            <p style="margin-top: 10px; margin-bottom: 1rem; color: black; font-weight: bold;">Select Dates to Print Events and Earnings</p>
+        </center>
+    </section>
 
-<!-- Print Function -->
-<script>
-    function printEarnings() {
-        var printContent = document.body.innerHTML;
-        var originalContent = document.body.innerHTML;
-        var printWindow = window.open('', '', 'width=800, height=600');
-        printWindow.document.write('<html><head><title>Print Earnings</title>');
-        printWindow.document.write('<style>');
-        printWindow.document.write('body { font-family: Arial, sans-serif; color: black; }');
-        printWindow.document.write('.overview-boxes { display: flex; flex-wrap: wrap; gap: 10px; }');
-        printWindow.document.write('.box { border: 1px solid black; padding: 10px; text-align: center; width: 200px; }');
-        printWindow.document.write('</style>');
-        printWindow.document.write('</head><body>');
-        printWindow.document.write('<h2 style="text-align: center;">Earnings Overview</h2>');
-        printWindow.document.write(document.querySelector('.overview-summary').outerHTML);
-        printWindow.document.write(document.querySelector('.overview-section').outerHTML);
-        printWindow.document.write('</body></html>');
-        
-        printWindow.document.close();
-        printWindow.print();
-    }
-</script>
+    <script>
+        function printEarnings() {
+            var printContent = document.body.innerHTML;
+            var originalContent = document.body.innerHTML;
+            var printWindow = window.open('', '', 'width=800, height=600');
+            printWindow.document.write('<html><head><title>Print Earnings</title>');
+            printWindow.document.write('<style>');
+            printWindow.document.write('body { font-family: Arial, sans-serif; color: black; }');
+            printWindow.document.write('.overview-boxes { display: flex; flex-wrap: wrap; gap: 10px; }');
+            printWindow.document.write('.box { border: 1px solid black; padding: 10px; text-align: center; width: 200px; }');
+            printWindow.document.write('</style>');
+            printWindow.document.write('</head><body>');
+            printWindow.document.write('<h2 style="text-align: center;">Earnings Overview</h2>');
+            printWindow.document.write(document.querySelector('.overview-summary').outerHTML);
+            printWindow.document.write('</body></html>');
 
+            printWindow.document.close();
+            printWindow.print();
+        }
+    </script>
 
     <section class="earnings-section">
+        <form method="POST" style="display: flex; align-items: center; gap: 10px; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); font-family: Arial, sans-serif; width: max-content; margin: auto;">
+            <label for="start_date" style="font-weight: bold; font-size: 14px;">From:</label>
+            <input type="date" name="start_date" id="start_date" value="<?php echo $start_date ?? ''; ?>" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;" required>
 
-<!-- Week Filter Form -->
-<form method="POST" style="display: flex; align-items: center; gap: 10px; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); font-family: Arial, sans-serif; width: max-content; margin: auto;">
-    
-    <label for="filter_week" style="font-weight: bold; font-size: 14px;">Select Week:</label>
-    
-    <select name="filter_week" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
-        <option value="">All Weeks</option>
-        <?php foreach ($all_weeks as $week): ?>
-            <option value="<?= $week ?>" <?= ($filtered_week == $week) ? 'selected' : '' ?>>
-                <?= $week ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
+            <label for="end_date" style="font-weight: bold; font-size: 14px;">To:</label>
+            <input type="date" name="end_date" id="end_date" value="<?php echo $end_date ?? ''; ?>" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;" required>
 
-    <button type="submit" style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer;">
-        Filter
-    </button>
+            <button type="submit" style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer;">
+                Filter
+            </button>
+        </form>
+        <br>
 
-</form>
-<br>
+        <?php if ($range_data): ?>
+            <div class="table-container">
+                <table border="1">
+                    <tr>
+                        <th>Category</th>
+                        <th>Count</th>
+                        <th>Earnings</th>
+                    </tr>
+                    <tr>
+                        <td>Baptism</td>
+                        <td><?php echo $range_data['baptism']['count']; ?></td>
+                        <td>₱<?php echo number_format($range_data['baptism']['earnings'], 2); ?></td>
+                    </tr>
+                    <tr>
+                        <td>Pamisa</td>
+                        <td><?php echo $range_data['pamisa']['count']; ?></td>
+                        <td>₱<?php echo number_format($range_data['pamisa']['earnings'], 2); ?></td>
+                    </tr>
+                    <tr>
+                        <td>Wedding</td>
+                        <td><?php echo $range_data['wedding']['count']; ?></td>
+                        <td>₱<?php echo number_format($range_data['wedding']['earnings'], 2); ?></td>
+                    </tr>
+                    <tr>
+                        <td>Blessing</td>
+                        <td><?php echo $range_data['blessings']['count']; ?></td>
+                        <td>₱<?php echo number_format($range_data['blessings']['earnings'], 2); ?></td>
+                    </tr>
+                    <tr>
+                        <th>Total</th>
+                        <th><?php echo array_sum(array_column($range_data, 'count')); ?></th>
+                        <th>₱<?php echo number_format($range_data['total_earnings'], 2); ?></th>
+                    </tr>
+                </table>
+            </div>
+            <center>
+                <button onclick="printRangeEarnings()" style="margin-top: 10px; padding: 10px 20px; background-color: #28a745; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer;">
+                    Print Earnings
+                </button>
+            </center>
 
-<!-- Weekly Earnings Table with Scroll -->
-<div class="table-container">
-    <table border="1">
-        <tr>
-            <th>Week</th>
-            <th>Baptism Earnings</th>
-            <th>Pamisa Earnings</th>
-            <th>Wedding Earnings</th>
-            <th>Blessings Earnings</th>
-        </tr>
-        <?php foreach ($all_weeks as $week): ?>
-            <?php if (!$filtered_week || $filtered_week == $week): ?>
-                <tr>
-                    <td><?= $week ?></td>
-                    <td>₱<?= number_format($weekly_baptism[$week] ?? 0, 2) ?></td>
-                    <td>₱<?= number_format($weekly_pamisa[$week] ?? 0, 2) ?></td>
-                    <td>₱<?= number_format($weekly_wedding[$week] ?? 0, 2) ?></td>
-                    <td>₱<?= number_format($weekly_blessings[$week] ?? 0, 2) ?></td>
-                </tr>
-            <?php endif; ?>
-        <?php endforeach; ?>
-    </table>
-</div>
-<center><button onclick="printWeeklyEarnings()" style="margin-top: 10px; padding: 10px 20px; background-color: #28a745; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer;">
-    Print Earnings
-</button></center>
+            <script>
+                function printRangeEarnings() {
+                    var printContents = document.querySelector('.table-container').innerHTML;
+                    var originalContents = document.body.innerHTML;
 
-<script>
-    function printWeeklyEarnings() {
-        var printContents = document.querySelector('.table-container').innerHTML;
-        var originalContents = document.body.innerHTML;
+                    document.body.innerHTML = `
+                    <html>
+                        <head>
+                            <title>Print Date Range Earnings</title>
+                            <style>
+                                body { font-family: Arial, sans-serif; text-align: center; font-size: 12px; margin-left: -264px;}
+                                .table-wrapper { display: flex; justify-content: center; width: 100%; }
+                                table { border-collapse: collapse; margin: 10px auto; font-size: 10px; }
+                                th, td { padding: 5px; text-align: center; border: 1px solid black; }
+                                h2, h3 { margin-top: 20px; font-size: 14px; }
+                                .summary { margin: 20px 0; font-size: 12px; }
+                            </style>
+                        </head>
+                        <body>
+                            <h1>PARISH OF THE HOLY CROSS</h1>
+                            <p>4009 Gen. T. de Leon, Valenzuela City, 1442 Metro Manila</p>
+                            <h2>Earnings Report for <?php echo "$start_date to $end_date"; ?></h2>
+                            <h3>Baptism Requests</h3>
+                            <div class="table-wrapper">
+                                <table>
+                                    <tr>
+                                        <?php
+                                        $baptism_columns = ['selected_date' => 'Date', 'baptized_name' => 'Child Name', 'status' => 'Status'];
+                                        foreach ($baptism_columns as $col => $label) {
+                                            echo "<th>$label</th>";
+                                        }
+                                        ?>
+                                    </tr>
+                                    <?php
+                                    $baptism_details->data_seek(0); // Reset result pointer
+                                    while ($row = $baptism_details->fetch_assoc()): ?>
+                                        <tr>
+                                            <?php foreach ($baptism_columns as $col => $label): ?>
+                                                <td><?php echo htmlspecialchars($row[$col] ?? 'N/A'); ?></td>
+                                            <?php endforeach; ?>
+                                        </tr>
+                                    <?php endwhile; ?>
+                                </table>
+                            </div>
+                            <h3>Pamisa Requests</h3>
+                            <div class="table-wrapper">
+                                <table>
+                                    <tr>
+                                        <?php
+                                        $pamisa_columns = ['selected_date' => 'Date', 'name_of_intended' => 'Intended Name', 'pamisa_type' => 'Type', 'status' => 'Status'];
+                                        foreach ($pamisa_columns as $col => $label) {
+                                            echo "<th>$label</th>";
+                                        }
+                                        ?>
+                                    </tr>
+                                    <?php
+                                    $pamisa_details->data_seek(0); // Reset result pointer
+                                    while ($row = $pamisa_details->fetch_assoc()): ?>
+                                        <tr>
+                                            <?php foreach ($pamisa_columns as $col => $label): ?>
+                                                <td><?php echo htmlspecialchars($row[$col] ?? 'N/A'); ?></td>
+                                            <?php endforeach; ?>
+                                        </tr>
+                                    <?php endwhile; ?>
+                                </table>
+                            </div>
+                            <h3>Wedding Requests</h3>
+                            <div class="table-wrapper">
+                                <table>
+                                    <tr>
+                                        <?php
+                                        $wedding_columns = ['wedding_date' => 'Wedding Date', 'bride_name' => 'Bride Name', 'groom_name' => 'Groom Name', 'status' => 'Status'];
+                                        foreach ($wedding_columns as $col => $label) {
+                                            echo "<th>$label</th>";
+                                        }
+                                        ?>
+                                    </tr>
+                                    <?php
+                                    $wedding_details->data_seek(0); // Reset result pointer
+                                    while ($row = $wedding_details->fetch_assoc()): ?>
+                                        <tr>
+                                            <?php foreach ($wedding_columns as $col => $label): ?>
+                                                <td><?php echo htmlspecialchars($row[$col] ?? 'N/A'); ?></td>
+                                            <?php endforeach; ?>
+                                        </tr>
+                                    <?php endwhile; ?>
+                                </table>
+                            </div>
+                            <h3>Blessings Requests</h3>
+                            <div class="table-wrapper">
+                                <table>
+                                    <tr>
+                                        <?php
+                                        $blessings_columns = ['blessing_date' => 'Date', 'name_of_blessed' => 'Blessed Name', 'type_of_blessing' => 'Type', 'status' => 'Status'];
+                                        foreach ($blessings_columns as $col => $label) {
+                                            echo "<th>$label</th>";
+                                        }
+                                        ?>
+                                    </tr>
+                                    <?php
+                                    $blessings_details->data_seek(0); // Reset result pointer
+                                    while ($row = $blessings_details->fetch_assoc()): ?>
+                                        <tr>
+                                            <?php foreach ($blessings_columns as $col => $label): ?>
+                                                <td><?php echo htmlspecialchars($row[$col] ?? 'N/A'); ?></td>
+                                            <?php endforeach; ?>
+                                        </tr>
+                                    <?php endwhile; ?>
+                                </table>
+                            </div>
+                            <h3>Summary of Earnings Report for <?php echo "$start_date to $end_date"; ?></h3>
+                            <div class="table-wrapper">
+                                ${printContents}
+                            </div>
+                        </body>
+                    </html>
+                `;
 
-        document.body.innerHTML = `
-            <html>
-                <head>
-                    <title>Print Weekly Earnings</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; text-align: center; font-size: 12px; }
-                        .table-wrapper { display: flex; justify-content: center; align-items: center; width: 100%; }
-                        table { border-collapse: collapse; width: auto; margin: 10px auto; font-size: 10px; }
-                        th, td { padding: 5px; text-align: center; border: 1px solid black; }
-                        h2 { margin-top: 0; font-size: 14px; }
-                    </style>
-                </head>
-                <body>
-                    <h2>Weekly Earnings Report</h2>
-                    <div class="table-wrapper">
-                        ${printContents}
-                    </div>
-                </body>
-            </html>
-        `;
-
-        window.print();
-        document.body.innerHTML = originalContents;
-    }
-</script>
-
-
-
-
+                    window.print();
+                    document.body.innerHTML = originalContents;
+                }
+            </script>
+        <?php endif; ?>
+    </section>
 
     <section class="upcoming-events">
-    <br><h2>All Events</h2>
+        <div class="section-container" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); margin-bottom: 20px; font-family: Arial, sans-serif;">
+            <h3 style="margin-bottom: 10px;">Baptism Slots</h3>
+            <div class="table-container" style="overflow-x: auto;">
+                <table id="baptismTable" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #007bff; color: white;">
+                            <th style="padding: 10px; border: 1px solid #ddd;">Date</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Slots Remaining</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($row = $result_baptism_slots->fetch_assoc()): ?>
+                            <tr style="text-align: center;">
+                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['date']; ?></td>
+                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['slots_remaining'] . "/50"; ?></td>
+                            </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+            </div>
+            <button onclick="printTable('baptismTable')" style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; margin-bottom: 10px;">Print Baptism</button>
+        </div>
 
+        <div class="section-container" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); margin-bottom: 20px; font-family: Arial, sans-serif;">
+            <h3 style="margin-bottom: 10px;">Pamisa Requests</h3>
+            <div class="table-container" style="overflow-x: auto;">
+                <table id="pamisaTable" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #007bff; color: white;">
+                            <th style="padding: 10px; border: 1px solid #ddd;">Date</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Intended Name</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Type</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($row = $result_pamisa->fetch_assoc()): ?>
+                            <tr style="text-align: center;">
+                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['selected_date']; ?></td>
+                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['name_of_intended']; ?></td>
+                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['pamisa_type']; ?></td>
+                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['status']; ?></td>
+                            </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+            </div>
+            <button onclick="printTable('pamisaTable')" style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; margin-bottom: 10px;">Print Pamisa</button>
+        </div>
 
-    <form id="filterForm" style="display: flex; align-items: center; gap: 10px; background: white; padding: 10px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); font-family: Arial, sans-serif; width: max-content; margin: auto;">
-    
-    <label for="filter_date" style="font-weight: bold;">Date:</label>
-    <input type="date" id="filter_date" name="filter_date" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
-    
-    <label for="table" style="font-weight: bold;">Table:</label>
-    <select id="table" name="table" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
-        <option value="baptism_slots">Baptism Slots</option>
-        <option value="pamisa_requests">Pamisa Requests</option>
-        <option value="wedding_requests">Wedding Requests</option>
-        <option value="blessings_requests">Blessings Requests</option>
-    </select>
+        <div class="section-container" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); margin-bottom: 20px; font-family: Arial, sans-serif;">
+            <h3 style="margin-bottom: 10px;">Wedding Requests</h3>
+            <div class="table-container" style="overflow-x: auto;">
+                <table id="weddingTable" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #007bff; color: white;">
+                            <th style="padding: 10px; border: 1px solid #ddd;">Wedding Date</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Bride Name</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Groom Name</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($row = $result_wedding->fetch_assoc()): ?>
+                            <tr style="text-align: center;">
+                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['wedding_date']; ?></td>
+                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['bride_name']; ?></td>
+                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['groom_name']; ?></td>
+                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['status']; ?></td>
+                            </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+            </div>
+            <button onclick="printTable('weddingTable')" style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; margin-bottom: 10px;">Print Wedding</button>
+        </div>
 
-    <button type="button" onclick="filterResults()" style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer;">Filter</button>
+        <div class="section-container" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); margin-bottom: 20px; font-family: Arial, sans-serif;">
+            <h3 style="margin-bottom: 10px;">Blessings Requests</h3>
+            <div class="table-container" style="overflow-x: auto;">
+                <table id="blessingsTable" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #007bff; color: white;">
+                            <th style="padding: 10px; border: 1px solid #ddd;">Date</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Blessed Name</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Type</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($row = $result_blessings->fetch_assoc()): ?>
+                            <tr style="text-align: center;">
+                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['blessing_date']; ?></td>
+                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['name_of_blessed']; ?></td>
+                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['type_of_blessing']; ?></td>
+                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['status']; ?></td>
+                            </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+            </div>
+            <button onclick="printTable('blessingsTable')" style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; margin-bottom: 10px;">Print Blessings</button>
+        </div>
 
-</form>
+        <script>
+            function printTable(tableId) {
+                var table = document.getElementById(tableId);
+                var section = table.closest(".section-container");
+                var title = section.querySelector("h3").innerText;
 
+                var printContent = `
+                    <html>
+                    <head>
+                        <title>${title}</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; padding: 20px; }
+                            h2 { text-align: center; margin-bottom: 20px; }
+                            table { width: 100%; border-collapse: collapse; }
+                            th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+                            th { background-color: #2C3E50; color: white; }
+                        </style>
+                    </head>
+                    <body>
+                        <h2>${title}</h2>
+                        ${table.outerHTML}
+                    </body>
+                    </html>`;
 
-<script>
-function filterResults() {
-    var filterDate = document.getElementById('filter_date').value;
-    var selectedTable = document.getElementById('table').value;
+                var newWindow = window.open("", "", "width=800,height=600");
+                newWindow.document.write(printContent);
+                newWindow.document.close();
+                newWindow.print();
+            }
 
-    if (!filterDate) {
-        alert("Please select a date.");
-        return;
-    }
-
-    var newWindow = window.open("", "_blank", "width=800,height=600");
-
-    if (!newWindow) {
-        alert("Please allow pop-ups for this site.");
-        return;
-    }
-
-    var formData = new FormData();
-    formData.append("filter_date", filterDate);
-    formData.append("table", selectedTable);
-
-    fetch("fetch_filtered_results.php", {
-        method: "POST",
-        body: formData
-    })
-    .then(response => response.text()) 
-    .then(html => {
-        newWindow.document.open();
-        newWindow.document.write(html); 
-        newWindow.document.close();
-    })
-    .catch(error => console.error("Error:", error));
-}
-</script>
-<br>
-
-<div class="section-container" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); margin-bottom: 20px; font-family: Arial, sans-serif;">
-    <h3 style="margin-bottom: 10px;">Baptism Slots</h3>
-    <button onclick="printTable('baptismTable')" style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; margin-bottom: 10px;">Print Baptism</button>
-    
-    <div class="table-container" style="overflow-x: auto;">
-        <table id="baptismTable" style="width: 100%; border-collapse: collapse;">
-            <thead>
-                <tr style="background: #007bff; color: white;">
-                    <th style="padding: 10px; border: 1px solid #ddd;">Date</th>
-                    <th style="padding: 10px; border: 1px solid #ddd;">Slots Remaining</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php while ($row = $result_baptism_slots->fetch_assoc()): ?>
-                    <tr style="text-align: center;">
-                        <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['date']; ?></td>
-                        <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['slots_remaining'] . "/50"; ?></td>
-
-                    </tr>
-                <?php endwhile; ?>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-
-<!-- Pamisa Requests -->
-<div class="section-container" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); margin-bottom: 20px; font-family: Arial, sans-serif;">
-    <h3 style="margin-bottom: 10px;">Pamisa Requests</h3>
-    <button onclick="printTable('pamisaTable')" style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; margin-bottom: 10px;">Print Pamisa</button>
-    
-    <div class="table-container" style="overflow-x: auto;">
-        <table id="pamisaTable" style="width: 100%; border-collapse: collapse;">
-            <thead>
-                <tr style="background: #007bff; color: white;">
-                    <th style="padding: 10px; border: 1px solid #ddd;">Date</th>
-                    <th style="padding: 10px; border: 1px solid #ddd;">Intended Name</th>
-                    <th style="padding: 10px; border: 1px solid #ddd;">Type</th>
-                    <th style="padding: 10px; border: 1px solid #ddd;">Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php while ($row = $result_pamisa->fetch_assoc()): ?>
-                    <tr style="text-align: center;">
-                        <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['selected_date']; ?></td>
-                        <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['name_of_intended']; ?></td>
-                        <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['pamisa_type']; ?></td>
-                        <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['status']; ?></td>
-                    </tr>
-                <?php endwhile; ?>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- Wedding Requests -->
-<div class="section-container" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); margin-bottom: 20px; font-family: Arial, sans-serif;">
-    <h3 style="margin-bottom: 10px;">Wedding Requests</h3>
-    <button onclick="printTable('weddingTable')" style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; margin-bottom: 10px;">Print Wedding</button>
-    
-    <div class="table-container" style="overflow-x: auto;">
-        <table id="weddingTable" style="width: 100%; border-collapse: collapse;">
-            <thead>
-                <tr style="background: #007bff; color: white;">
-                    <th style="padding: 10px; border: 1px solid #ddd;">Wedding Date</th>
-                    <th style="padding: 10px; border: 1px solid #ddd;">Bride Name</th>
-                    <th style="padding: 10px; border: 1px solid #ddd;">Groom Name</th>
-                    <th style="padding: 10px; border: 1px solid #ddd;">Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php while ($row = $result_wedding->fetch_assoc()): ?>
-                    <tr style="text-align: center;">
-                        <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['wedding_date']; ?></td>
-                        <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['bride_name']; ?></td>
-                        <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['groom_name']; ?></td>
-                        <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['status']; ?></td>
-                    </tr>
-                <?php endwhile; ?>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- Blessings Requests -->
-<div class="section-container" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); margin-bottom: 20px; font-family: Arial, sans-serif;">
-    <h3 style="margin-bottom: 10px;">Blessings Requests</h3>
-    <button onclick="printTable('blessingsTable')" style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; margin-bottom: 10px;">Print Blessings</button>
-    
-    <div class="table-container" style="overflow-x: auto;">
-        <table id="blessingsTable" style="width: 100%; border-collapse: collapse;">
-            <thead>
-                <tr style="background: #007bff; color: white;">
-                    <th style="padding: 10px; border: 1px solid #ddd;">Date</th>
-                    <th style="padding: 10px; border: 1px solid #ddd;">Blessed Name</th>
-                    <th style="padding: 10px; border: 1px solid #ddd;">Type</th>
-                    <th style="padding: 10px; border: 1px solid #ddd;">Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php while ($row = $result_blessings->fetch_assoc()): ?>
-                    <tr style="text-align: center;">
-                        <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['blessing_date']; ?></td>
-                        <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['name_of_blessed']; ?></td>
-                        <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['type_of_blessing']; ?></td>
-                        <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['status']; ?></td>
-                    </tr>
-                <?php endwhile; ?>
-            </tbody>
-        </table>
-    </div>
-    </div>
-</div>
-
-<script>
-    function printTable(tableId) {
-        var table = document.getElementById(tableId);
-        var section = table.closest(".section-container"); 
-        var title = section.querySelector("h3").innerText; 
-
-        var printContent = `
-            <html>
-            <head>
-                <title>${title}</title>
-                <style>
-                    body { font-family: Arial, sans-serif; padding: 20px; }
-                    h2 { text-align: center; margin-bottom: 20px; }
-                    table { width: 100%; border-collapse: collapse; }
-                    th, td { border: 1px solid #000; padding: 8px; text-align: left; }
-                    th { background-color: #2C3E50; color: white; }
-                </style>
-            </head>
-            <body>
-                <h2>${title}</h2>
-                ${table.outerHTML}
-            </body>
-            </html>`;
-
-        var newWindow = window.open("", "", "width=800,height=600");
-        newWindow.document.write(printContent);
-        newWindow.document.close();
-        newWindow.print();
-    }
-
-    function printFilteredResults() {
-        var printContent = document.getElementById("printSection").innerHTML;
-        var newWindow = window.open("", "", "width=800,height=600");
-        newWindow.document.write("<html><head><title>Print</title>");
-        newWindow.document.write("<style>");
-        newWindow.document.write("table {width: 100%; border-collapse: collapse;}");
-        newWindow.document.write("th, td {border: 1px solid #000; padding: 8px; text-align: left;}");
-        newWindow.document.write("th {background-color: #2C3E50; color: white;}");
-        newWindow.document.write("</style></head><body>");
-        newWindow.document.write(printContent);
-        newWindow.document.write("</body></html>");
-        newWindow.document.close();
-        newWindow.print();
-    }
-</script>
-
+            function printFilteredResults() {
+                var printContent = document.getElementById("printSection").innerHTML;
+                var newWindow = window.open("", "", "width=800,height=600");
+                newWindow.document.write("<html><head><title>Print</title>");
+                newWindow.document.write("<style>");
+                newWindow.document.write("table {width: 100%; border-collapse: collapse;}");
+                newWindow.document.write("th, td {border: 1px solid #000; padding: 8px; text-align: left;}");
+                newWindow.document.write("th {background-color: #2C3E50; color: white;}");
+                newWindow.document.write("</style></head><body>");
+                newWindow.document.write(printContent);
+                newWindow.document.write("</body></html>");
+                newWindow.document.close();
+                newWindow.print();
+            }
+        </script>
+    </section>
 
     <footer>
-    <div class="footer-container">
-        <div class="footer-about">
-        <h3>About Parish of the Holy Cross</h3>
-            <p>
-                The Parish of the Holy Cross is a sacred place of worship, where the community comes together to celebrate faith, hope, and love. Whether you're seeking spiritual growth, a peaceful moment of reflection, or a place to connect with others, our church provides a welcoming environment for all.
-            </p>
-
+        <div class="footer-container">
+            <div class="footer-about">
+                <h3>About Parish of the Holy Cross</h3>
+                <p>
+                    The Parish of the Holy Cross is a sacred place of worship, where the community comes together to celebrate faith, hope, and love. Whether you're seeking spiritual growth, a peaceful moment of reflection, or a place to connect with others, our church provides a welcoming environment for all.
+                </p>
+            </div>
+            <div class="footer-contact">
+                <h3>Contact Us</h3>
+                <p>Email: holycrossparish127@yahoo.com</p>
+                <p>Phone: 28671581</p>
+                <p>Address: Gen. T. De Leon, Valenzuela, Philippines, 1442 </p>
+            </div>
+            <div class="footer-socials">
+                <h3>Follow Us</h3>
+                <a href="https://www.facebook.com/ParishoftheHolyCrossValenzuelaCityOfficial/">Facebook</a>
+            </div>
         </div>
-        <div class="footer-contact">
-            <h3>Contact Us</h3>
-            <p>Email: holycrossparish127@yahoo.com</p>
-            <p>Phone: 28671581</p>
-            <p>Address: Gen. T. De Leon, Valenzuela, Philippines, 1442 </p>
+        <div class="footer-bottom">
+            <p>© 2025 Parish of the Holy Cross. All rights reserved.</p>
         </div>
-        <div class="footer-socials">
-            <h3>Follow Us</h3>
-            <a href="https://www.facebook.com/ParishoftheHolyCrossValenzuelaCityOfficial/">Facebook</a>
-        </div>
-    </div>
-    <div class="footer-bottom">
-        <p>&copy; 2025 Parish of the Holy Cross. All rights reserved.</p>
-    </div>
-</footer>
+    </footer>
 
+    <script>
+        <?php if (!empty($alertMessage)) echo $alertMessage; ?>
 
-<script>
-<?php if (!empty($alertMessage)) echo $alertMessage; ?>
+        function updateDateTime() {
+            let now = new Date();
+            let options = {
+                timeZone: 'Asia/Manila',
+                hour12: true,
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            document.getElementById('datetime').innerHTML = new Intl.DateTimeFormat('en-PH', options).format(now);
+        }
 
-function updateDateTime() {
-    let now = new Date();
-    let options = { timeZone: 'Asia/Manila', hour12: true, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-    document.getElementById('datetime').innerHTML = new Intl.DateTimeFormat('en-PH', options).format(now);
-}
-
-updateDateTime();
-setInterval(updateDateTime, 60000); 
-
-</script>
-<style>
+        updateDateTime();
+        setInterval(updateDateTime, 60000);
+    </script>
+    <style>
         .upcoming-events {
             margin: 20px;
             text-align: center;
         }
+
         .event-section {
             margin-bottom: 30px;
         }
+
         .table-container {
             max-height: 250px;
             overflow-y: auto;
             border: 1px solid #ddd;
             border-radius: 5px;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
         }
-        th, td {
+
+        th,
+        td {
             padding: 10px;
             border-bottom: 1px solid #ddd;
         }
+
         th {
             background-color: #2C3E50;
             color: white;
         }
+
         button {
             margin: 10px;
             padding: 8px 15px;
@@ -646,13 +652,16 @@ setInterval(updateDateTime, 60000);
             cursor: pointer;
             border-radius: 5px;
         }
+
         button:hover {
             background-color: #1A252F;
         }
+
         .overview-section {
             margin: 20px;
             text-align: center;
         }
+
         .overview-boxes {
             display: flex;
             justify-content: space-around;
@@ -661,10 +670,6 @@ setInterval(updateDateTime, 60000);
 
         .box h3 {
             margin-bottom: 10px;
-        }
-        .overview-section {
-            margin: 20px;
-            text-align: center;
         }
 
         .overview-boxes {
@@ -675,7 +680,7 @@ setInterval(updateDateTime, 60000);
         }
 
         .box {
-            background-color: #2c3e50; 
+            background-color: #2c3e50;
             color: white;
             border-radius: 15px;
             padding: 25px;
@@ -693,7 +698,7 @@ setInterval(updateDateTime, 60000);
         .box h3 {
             font-size: 18px;
             margin-bottom: 10px;
-            color: #f8c471; 
+            color: #f8c471;
         }
 
         .box p {
@@ -706,7 +711,6 @@ setInterval(updateDateTime, 60000);
             background: #2c3e50;
             color: white;
         }
-
 
         .datetime {
             text-align: center;
@@ -724,22 +728,27 @@ setInterval(updateDateTime, 60000);
 
         body {
             font-family: Arial, sans-serif;
-            background-color: rgb(241, 243, 240); 
+            background-color: rgb(241, 243, 240);
         }
+
         .table-container {
-            max-height: 400px; 
+            max-height: 400px;
             overflow-y: auto;
             border: 1px solid #ccc;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
         }
-        th, td {
+
+        th,
+        td {
             padding: 10px;
             text-align: center;
             border: 1px solid black;
         }
     </style>
 </body>
+
 </html>

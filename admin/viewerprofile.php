@@ -4,7 +4,7 @@ include 'db_connection.php';
 
 // Ensure the user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php"); // Redirect to login if not logged in
+    header("Location: index.php"); // Redirect to login if not logged in
     exit();
 }
 
@@ -26,9 +26,7 @@ $user_id = $_SESSION['user_id']; // Get the logged-in user's ID
 </head>
 <body id="bodyTag">
     <header class="header" id="header">
-        <div class="header_toggle">
-            <i class='bx bx-menu' id="header-toggle"></i>
-        </div>
+
     </header>
     <?php include 'viewer_sidebar.php'; ?><br>
     <div class="admin-greeting">Good Day, Viewer!</div>

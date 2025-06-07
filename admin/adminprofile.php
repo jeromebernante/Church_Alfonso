@@ -18,9 +18,7 @@ include 'db_connection.php';
 </head>
 <body id="bodyTag">
     <header class="header" id="header">
-        <div class="header_toggle">
-            <i class='bx bx-menu' id="header-toggle"></i>
-        </div>
+
     </header>
     <?php include 'sidebar.php'; ?><br>
     <div class="admin-greeting">Good Day, Admin!</div>

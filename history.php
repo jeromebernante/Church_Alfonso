@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
+    header("Location: index.php");
     exit();
 }
 
@@ -89,13 +89,15 @@ $stmt->close();
     <link rel="stylesheet" href="buttons.css">
     <link rel="icon" href="imgs/logo.png" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@3.10.2/dist/fullcalendar.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@3.10.2/dist/fullcalendar.min.js"></script>
 </head>
 
 <body id="bodyTag">
     <header class="header" id="header">
-        <div class="header_toggle">
-            <i class='bx bx-menu' id="header-toggle"></i>
-        </div>
     </header>
 
     <div class="l-navbar" id="nav-bar">
@@ -107,11 +109,11 @@ $stmt->close();
                     <span class="nav_logo-name">Parish of the Holy Cross</span>
                 </a>
                 <div class="nav_list">
-                    <a href="front.php" class="nav_link active">
+                    <a href="dashboard.php" class="nav_link">
                         <i class='bx bx-grid-alt nav_icon'></i>
                         <span class="nav_name">Dashboard</span>
                     </a>
-                    <a href="dashboard.php" class="nav_link">
+                    <a href="event_request.php" class="nav_link">
                         <i class='bx bx-calendar-event nav_icon'></i>
                         <span class="nav_name">Event Request</span>
                     </a>
@@ -122,7 +124,7 @@ $stmt->close();
                             <span class="notification-badge"><?php echo $notif_count; ?></span>
                         <?php endif; ?>
                     </a>
-                    <a href="history.php" class="nav_link">
+                    <a href="history.php" class="nav_link active">
                         <i class='bx bx-message-square-detail nav_icon'></i>
                         <span class="nav_name">History</span>
                     </a>
@@ -206,7 +208,7 @@ $stmt->close();
                             <td class="status-cell"><?php echo htmlspecialchars($row['status']); ?></td>
                             <td>
                                 <?php if (!empty($row['payment_receipt'])): ?>
-                                    <a href="/Church/<?php echo htmlspecialchars($row['payment_receipt']); ?>"
+                                    <a href="<?php echo htmlspecialchars($row['payment_receipt']); ?>"
                                         target="_blank">View</a>
                                 <?php else: ?>
                                     No receipt uploaded
@@ -256,7 +258,7 @@ $stmt->close();
                             <td class="status-cell"><?php echo htmlspecialchars($row['status']); ?></td>
                             <td>
                                 <?php if (!empty($row['payment_receipt'])): ?>
-                                    <a href="/Church/uploads/<?php echo htmlspecialchars($row['payment_receipt']); ?>"
+                                    <a href="uploads/<?php echo htmlspecialchars($row['payment_receipt']); ?>"
                                         target="_blank">View</a>
                                 <?php else: ?>
                                     No receipt uploaded
@@ -301,7 +303,7 @@ $stmt->close();
                         <td><?php echo htmlspecialchars($row['selected_date']); ?></td>
                         <td><?php echo htmlspecialchars($row['status']); ?></td>
                         <td>₱<?php echo number_format($row['price'], 2); ?></td>
-                        <td><?php echo $row['receipt_path'] ? "<a href='/Church/{$row['receipt_path']}' target='_blank'>View</a>" : "No receipt"; ?>
+                        <td><?php echo $row['receipt_path'] ? "<a href='{$row['receipt_path']}' target='_blank'>View</a>" : "No receipt"; ?>
                         </td>
                         <td><?php echo htmlspecialchars($row['request_date']); ?></td>
                     </tr>
@@ -345,7 +347,7 @@ $stmt->close();
                             <td class="status-cell"><?php echo htmlspecialchars($row['status']); ?></td>
                             <td>
                                 <?php if (!empty($row['receipt_path'])): ?>
-                                    <a href="/Church/<?php echo htmlspecialchars($row['receipt_path']); ?>" target="_blank">View</a>
+                                    <a href="<?php echo htmlspecialchars($row['receipt_path']); ?>" target="_blank">View</a>
                                 <?php else: ?>
                                     No receipt uploaded
                                 <?php endif; ?>

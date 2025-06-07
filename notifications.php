@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
+    header("Location: index.php");
     exit();
 }
 
@@ -42,12 +42,14 @@ $notif_stmt->close();
     <link rel="stylesheet" href="buttons.css">
     <link rel="icon" href="imgs/logo.png" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@3.10.2/dist/fullcalendar.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@3.10.2/dist/fullcalendar.min.js"></script>
 </head>
 <body id="bodyTag">
     <header class="header" id="header">
-        <div class="header_toggle">
-            <i class='bx bx-menu' id="header-toggle"></i>
-        </div>
     </header>
 
     <div class="l-navbar" id="nav-bar">
@@ -58,15 +60,15 @@ $notif_stmt->close();
                 <span class="nav_logo-name">Parish of the Holy Cross</span>
             </a>
             <div class="nav_list">
-                <a href="front.php" class="nav_link active">
+                <a href="dashboard.php" class="nav_link">
                     <i class='bx bx-grid-alt nav_icon'></i> 
                     <span class="nav_name">Dashboard</span>
                 </a>
-                <a href="dashboard.php" class="nav_link">
+                <a href="event_request.php" class="nav_link">
                     <i class='bx bx-calendar-event nav_icon'></i> 
                     <span class="nav_name">Event Request</span>
                 </a>
-                <a href="notifications.php" class="nav_link">
+                <a href="notifications.php" class="nav_link active">
                     <i class='bx bx-bell nav_icon'></i> 
                     <span class="nav_name">Notifications</span>
                 </a>

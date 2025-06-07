@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
+    header("Location: index.php");
     exit();
 }
 
@@ -77,9 +77,7 @@ $stmt_notif->close();
 </head>
 <body id="bodyTag">
     <header class="header" id="header">
-        <div class="header_toggle">
-            <i class='bx bx-menu' id="header-toggle"></i>
-        </div>
+
     </header>
 
     <div class="l-navbar" id="nav-bar">
@@ -90,11 +88,11 @@ $stmt_notif->close();
                 <span class="nav_logo-name">Parish of the Holy Cross</span>
             </a>
             <div class="nav_list">
-                <a href="front.php" class="nav_link active">
+                <a href="dashboard.php" class="nav_link">
                     <i class='bx bx-grid-alt nav_icon'></i> 
                     <span class="nav_name">Dashboard</span>
                 </a>
-                <a href="dashboard.php" class="nav_link">
+                <a href="event_request.php" class="nav_link">
                     <i class='bx bx-calendar-event nav_icon'></i> 
                     <span class="nav_name">Event Request</span>
                 </a>
@@ -109,7 +107,7 @@ $stmt_notif->close();
                     <i class='bx bx-message-square-detail nav_icon'></i> 
                     <span class="nav_name">History</span>
                 </a>
-                <a href="profile.php" class="nav_link">
+                <a href="profile.php" class="nav_link active">
                     <i class='bx bx-user nav_icon'></i> 
                     <span class="nav_name">My Profile</span>
                 </a>

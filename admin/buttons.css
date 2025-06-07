@@ -1,0 +1,93 @@
+/* General Button Styling */
+.service-btn, #save-pamisa, #proceed-payment, #submit-payment {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+}
+
+
+.service-btn {
+    background: linear-gradient(135deg,rgb(rgba(76,175,80)),rgb(38,95,39));
+    color: white;
+}
+
+.service-btn:hover {
+    background: linear-gradient(135deg, #0056b3, #003f80);
+}
+
+#proceed-payment {
+    background: linear-gradient(135deg, #28a745, #218838);
+    color: white;
+}
+
+#proceed-payment:hover {
+    background: linear-gradient(135deg, #218838, #1e7e34);
+}
+
+#submit-payment {
+    background: linear-gradient(135deg, #ffc107, #ff9800);
+    color: white;
+}
+
+#submit-payment:hover {
+    background: linear-gradient(135deg, #ff9800, #ff6f00);
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    width: 90%;
+    max-width: 400px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.modal-content h2 {
+    font-size: 22px;
+    color: #333;
+}
+
+.modal-content p {
+    color: #555;
+}
+
+input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.close {
+    float: right;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #ff4d4d;
+}
+
+.close:hover {
+    color: #d32f2f;
+}

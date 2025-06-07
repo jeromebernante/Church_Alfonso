@@ -7,7 +7,8 @@ document.addEventListener("DOMContentLoaded", function () {
           header = document.getElementById("header");
 
     const isSidebarExpanded = localStorage.getItem("sidebarExpanded") === "true";
-
+    console.log(isSidebarExpanded);
+    
     if (!isSidebarExpanded) {
         nav.classList.add("hide-text");
     } else {

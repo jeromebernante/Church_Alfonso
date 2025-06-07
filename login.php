@@ -29,7 +29,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         timer: 2000,
                         showConfirmButton: false
                     }).then(() => {
-                        window.location.href = 'front.php';
+                        window.location.href = 'dashboard.php';
                     });
                 });
               </script>";

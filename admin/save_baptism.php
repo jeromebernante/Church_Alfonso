@@ -1,19 +1,26 @@
 <?php
 session_start();
-include 'db_connection.php';
+include '../db_connection.php';
 
 header('Content-Type: application/json');
+
 $data = json_decode(file_get_contents("php://input"), true);
 
-if (!$data) {
-    echo json_encode(["status" => "error", "message" => "Invalid data."]);
+if (!$data || empty($data['baptized_name']) || empty($data['parents_name']) || empty($data['ninongs_ninangs']) || empty($data['selected_date'])) {
+    echo json_encode(["status" => "error", "message" => "Invalid or incomplete data."]);
     exit();
 }
 
-$baptized_name = $data['baptized_name'];
-$parents_name = $data['parents_name'];
+$baptized_name = trim($data['baptized_name']);
+$parents_name = json_encode($data['parents_name']);
 $ninongs_ninangs = json_encode($data['ninongs_ninangs']);
 $selected_date = $data['selected_date'];
+
+// Validate input lengths
+if (strlen($baptized_name) > 255 || count($data['parents_name']) > 2 || count($data['ninongs_ninangs']) < 2) {
+    echo json_encode(["status" => "error", "message" => "Invalid input lengths."]);
+    exit();
+}
 
 // Validate date format
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $selected_date)) {
@@ -21,29 +28,25 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $selected_date)) {
     exit();
 }
 
-// Step 1: Check priest availability for the selected date
-$sql_priest_check = "SELECT priest_name FROM priest_schedule WHERE date = ?";
-$stmt_priest = $conn->prepare($sql_priest_check);
-$stmt_priest->bind_param("s", $selected_date);
-$stmt_priest->execute();
-$stmt_priest->store_result();
-
-if ($stmt_priest->num_rows === 0) {
-    echo json_encode(["status" => "error", "message" => "No priest schedule found for the selected date."]);
-    $stmt_priest->close();
+// Validate that the date is not in the past
+$current_date = date('Y-m-d');
+if ($selected_date < $current_date) {
+    echo json_encode(["status" => "error", "message" => "Selected date cannot be in the past."]);
     exit();
 }
 
-$stmt_priest->bind_result($scheduled_priest);
-$stmt_priest->fetch();
-$stmt_priest->close();
+$sql = "SELECT priest_name FROM priest_schedule WHERE date = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $selected_date);
+$stmt->execute();
+$result = $stmt->get_result();
+$priest = $result->fetch_assoc();
 
-if (strtolower(trim($scheduled_priest)) === 'all priests unavailable') {
-    echo json_encode(["status" => "error", "message" => "No priests are available on the selected date."]);
+if ($priest && $priest['priest_name'] === 'All Priests Unavailable') {
+    echo json_encode(["status" => "error", "message" => "No priests available on this date. Please select another date."]);
     exit();
 }
 
-// Step 2: Check baptism slots
 $sql = "SELECT slots_remaining FROM baptism_slots WHERE date = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("s", $selected_date);
@@ -61,19 +64,15 @@ if ($row['slots_remaining'] <= 0) {
     exit();
 }
 
-// Step 3: Save baptism request and update slots
 $conn->begin_transaction();
 
-$sql = "INSERT INTO walkin_baptism (baptized_name, parents_name, ninongs_ninangs, selected_date) 
-        VALUES (?, ?, ?, ?)";
+$status = "Accepted";
 
+$sql = "INSERT INTO baptism_requests (user_id, baptized_name, parents_name, ninongs_ninangs, selected_date, status) 
+        VALUES (?, ?, ?, ?, ?, ?)";
+$user_id = 0;
 $stmt = $conn->prepare($sql);
-if ($stmt === false) {
-    echo json_encode(["status" => "error", "message" => "Database error while saving baptism request."]);
-    exit();
-}
-
-$stmt->bind_param("ssss", $baptized_name, $parents_name, $ninongs_ninangs, $selected_date);
+$stmt->bind_param("isssss", $user_id, $baptized_name, $parents_name, $ninongs_ninangs, $selected_date, $status);
 
 if ($stmt->execute()) {
     $sql = "UPDATE baptism_slots SET slots_remaining = slots_remaining - 1 WHERE date = ?";
@@ -82,11 +81,13 @@ if ($stmt->execute()) {
     $stmt->execute();
 
     $conn->commit();
-    
-    echo json_encode(["status" => "success", "message" => "Baptism request was successfully submitted."]);
+    echo json_encode([
+        "status" => "success",
+        "message" => "Baptism request saved successfully!"
+    ]);
 } else {
     $conn->rollback();
-    echo json_encode(["status" => "error", "message" => "Failed to save baptism request."]);
+    echo json_encode(["status" => "error", "message" => "Failed to save request."]);
 }
 
 $stmt->close();

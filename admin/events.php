@@ -147,9 +147,7 @@ include 'db_connection.php';
 </head>
 <body id="bodyTag">
     <header class="header" id="header">
-        <div class="header_toggle">
-            <i class='bx bx-menu' id="header-toggle"></i>
-        </div>
+
     </header>
     <?php include 'sidebar.php'; ?><br>
 
@@ -241,33 +239,53 @@ include 'db_connection.php';
 
 <div id="blessingContainer">
     <?php
-    $query = "
-        SELECT id, name_of_requestor, blessing_date, 'Online' AS type FROM blessings_requests WHERE blessing_date >= ?
-        UNION
-        SELECT id, name_of_requestor, blessing_date, 'Walk-in' AS type FROM walkin_blessing WHERE blessing_date >= ?
-        ORDER BY blessing_date ASC";
-
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("ss", $today, $today);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if ($result->num_rows > 0) {
-        while ($row = $result->fetch_assoc()) {
-            $requestId = $row['id'];
-            $requestor = $row['name_of_requestor'];
-            $blessingDate = date("F j, Y", strtotime($row['blessing_date']));
-            $type = $row['type'];
-
-            echo "<div class='blessing-box' data-type='$type' onclick='fetchBlessingDetails(\"$requestId\", \"$type\", this)'>";
-            echo "<h3>Requested by: $requestor</h3>";
-            echo "<p>Blessing Date: $blessingDate</p>";
-            echo "<p><b>Type:</b> $type</p>";
-            echo "<div class='details-container'></div>";
-            echo "</div>";
-        }
+    // Ensure database connection is valid
+    if ($conn->connect_error) {
+        echo "<p>Error connecting to the database.</p>";
     } else {
-        echo "<p>No upcoming Blessing requests.</p>";
+        // Define today's date for the query (YYYY-MM-DD format)
+        $today = date('Y-m-d');
+
+        // Prepare the query
+        $query = "SELECT id, name_of_requestor, blessing_date, 
+                         CASE WHEN user_id = 0 THEN 'Walk-in' ELSE 'Online' END AS type 
+                  FROM blessings_requests 
+                  WHERE blessing_date >= ?
+                  ORDER BY created_at DESC";
+
+        $stmt = $conn->prepare($query);
+        if ($stmt === false) {
+            error_log("Prepare failed: " . $conn->error);
+            echo "<p>Error preparing the query.</p>";
+        } else {
+            // Bind the single parameter
+            $stmt->bind_param("s", $today);
+            if ($stmt->execute()) {
+                $result = $stmt->get_result();
+
+                if ($result->num_rows > 0) {
+                    while ($row = $result->fetch_assoc()) {
+                        $requestId = htmlspecialchars($row['id'], ENT_QUOTES, 'UTF-8');
+                        $requestor = htmlspecialchars($row['name_of_requestor'], ENT_QUOTES, 'UTF-8');
+                        $blessingDate = date("F j, Y", strtotime($row['blessing_date']));
+                        $type = htmlspecialchars($row['type'], ENT_QUOTES, 'UTF-8');
+
+                        echo "<div class='blessing-box' data-type='$type' onclick='fetchBlessingDetails(\"$requestId\", \"$type\", this)'>";
+                        echo "<h3>Requested by: $requestor</h3>";
+                        echo "<p>Blessing Date: $blessingDate</p>";
+                        echo "<p><b>Type:</b> $type</p>";
+                        echo "<div class='details-container'></div>";
+                        echo "</div>";
+                    }
+                } else {
+                    echo "<p>No upcoming Blessing requests.</p>";
+                }
+                $stmt->close();
+            } else {
+                error_log("Execute failed: " . $stmt->error);
+                echo "<p>Error executing the query.</p>";
+            }
+        }
     }
     ?>
 </div>
@@ -286,33 +304,53 @@ include 'db_connection.php';
 
 <div id="pamisaContainer">
     <?php
-    $query = "
-        SELECT id, name_of_requestor, selected_date, 'Online' AS type FROM pamisa_requests WHERE selected_date >= ?
-        UNION
-        SELECT id, name_of_requestor, selected_date, 'Walk-in' AS type FROM walkin_pamisa WHERE selected_date >= ?
-        ORDER BY selected_date ASC";
-
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("ss", $today, $today);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if ($result->num_rows > 0) {
-        while ($row = $result->fetch_assoc()) {
-            $requestId = $row['id'];
-            $requestor = $row['name_of_requestor'];
-            $pamisaDate = date("F j, Y", strtotime($row['selected_date']));
-            $type = $row['type'];
-
-            echo "<div class='pamisa-box' data-type='$type' onclick='fetchPamisaDetails(\"$requestId\", \"$type\", this)'>";
-            echo "<h3>Requested by: $requestor</h3>";
-            echo "<p>Pamisa Date: $pamisaDate</p>";
-            echo "<p><b>Type:</b> $type</p>";
-            echo "<div class='details-container'></div>";
-            echo "</div>";
-        }
+    // Ensure database connection is valid
+    if ($conn->connect_error) {
+        echo "<p>Error connecting to the database.</p>";
     } else {
-        echo "<p>No upcoming Pamisa requests.</p>";
+        // Define today's date for the query (YYYY-MM-DD format)
+        $today = date('Y-m-d');
+
+        // Prepare the query
+        $query = "SELECT id, name_of_requestor, selected_date, 
+                  CASE WHEN user_id = 0 THEN 'Walk-in' ELSE 'Online' END AS type 
+                  FROM pamisa_requests 
+                  WHERE selected_date >= ?
+                  ORDER BY created_at DESC";
+
+        $stmt = $conn->prepare($query);
+        if ($stmt === false) {
+            error_log("Prepare failed: " . $conn->error);
+            echo "<p>Error preparing the query.</p>";
+        } else {
+            // Bind the single parameter
+            $stmt->bind_param("s", $today);
+            if ($stmt->execute()) {
+                $result = $stmt->get_result();
+
+                if ($result->num_rows > 0) {
+                    while ($row = $result->fetch_assoc()) {
+                        $requestId = htmlspecialchars($row['id'], ENT_QUOTES, 'UTF-8');
+                        $requestor = htmlspecialchars($row['name_of_requestor'], ENT_QUOTES, 'UTF-8');
+                        $pamisaDate = date("F j, Y", strtotime($row['selected_date']));
+                        $type = htmlspecialchars($row['type'], ENT_QUOTES, 'UTF-8');
+
+                        echo "<div class='pamisa-box' data-type='$type' onclick='fetchPamisaDetails(\"$requestId\", \"$type\", this)'>";
+                        echo "<h3>Requested by: $requestor</h3>";
+                        echo "<p>Pamisa Date: $pamisaDate</p>";
+                        echo "<p><b>Type:</b> $type</p>";
+                        echo "<div class='details-container'></div>";
+                        echo "</div>";
+                    }
+                } else {
+                    echo "<p>No upcoming Pamisa requests.</p>";
+                }
+                $stmt->close();
+            } else {
+                error_log("Execute failed: " . $stmt->error);
+                echo "<p>Error executing the query.</p>";
+            }
+        }
     }
     ?>
 </div>
@@ -331,38 +369,57 @@ include 'db_connection.php';
 
 <div id="weddingContainer">
     <?php
-    $query = "
-        SELECT id, bride_name, groom_name, wedding_date, contact, 'Online' AS type FROM wedding_requests WHERE wedding_date >= ?
-        UNION
-        SELECT id, bride_name, groom_name, wedding_date, contact, 'Walk-in' AS type FROM walkin_wedding_requests WHERE wedding_date >= ?
-        ORDER BY wedding_date ASC";
-
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("ss", $today, $today);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if ($result->num_rows > 0) {
-        while ($row = $result->fetch_assoc()) {
-            $requestId = $row['id'];
-            $brideName = $row['bride_name'];
-            $groomName = $row['groom_name'];
-            $weddingDate = date("F j, Y", strtotime($row['wedding_date']));
-            $type = $row['type'];
-
-            echo "<div class='wedding-box' data-type='$type' onclick='fetchWeddingDetails(\"$requestId\", \"$type\", this)'>";
-            echo "<h3>$brideName & $groomName</h3>";
-            echo "<p>Wedding Date: $weddingDate</p>";
-            echo "<p><b>Type:</b> $type</p>";
-            echo "<div class='details-container'></div>";
-            echo "</div>";
-        }
+    // Ensure database connection is valid
+    if ($conn->connect_error) {
+        echo "<p>Error connecting to the database.</p>";
     } else {
-        echo "<p>No upcoming Weddings.</p>";
+        // Define today's date for the query (YYYY-MM-DD format)
+        $today = date('Y-m-d');
+
+        // Prepare the query
+        $query = "SELECT id, bride_name, groom_name, wedding_date, 
+                  CASE WHEN user_id = 0 THEN 'Walk-in' ELSE 'Online' END AS type 
+                  FROM wedding_requests 
+                  WHERE wedding_date >= ?
+                  ORDER BY created_at DESC";
+
+        $stmt = $conn->prepare($query);
+        if ($stmt === false) {
+            error_log("Prepare failed: " . $conn->error);
+            echo "<p>Error preparing the query.</p>";
+        } else {
+            // Bind the single parameter
+            $stmt->bind_param("s", $today);
+            if ($stmt->execute()) {
+                $result = $stmt->get_result();
+
+                if ($result->num_rows > 0) {
+                    while ($row = $result->fetch_assoc()) {
+                        $requestId = htmlspecialchars($row['id'], ENT_QUOTES, 'UTF-8');
+                        $brideName = htmlspecialchars($row['bride_name'], ENT_QUOTES, 'UTF-8');
+                        $groomName = htmlspecialchars($row['groom_name'], ENT_QUOTES, 'UTF-8');
+                        $weddingDate = date("F j, Y", strtotime($row['wedding_date']));
+                        $type = htmlspecialchars($row['type'], ENT_QUOTES, 'UTF-8');
+
+                        echo "<div class='wedding-box' data-type='$type' onclick='fetchWeddingDetails(\"$requestId\", \"$type\", this)'>";
+                        echo "<h3>$brideName & $groomName</h3>";
+                        echo "<p>Wedding Date: $weddingDate</p>";
+                        echo "<p><b>Type:</b> $type</p>";
+                        echo "<div class='details-container'></div>";
+                        echo "</div>";
+                    }
+                } else {
+                    echo "<p>No upcoming Weddings.</p>";
+                }
+                $stmt->close();
+            } else {
+                error_log("Execute failed: " . $stmt->error);
+                echo "<p>Error executing the query.</p>";
+            }
+        }
     }
     ?>
 </div>
-
 <script>
     function filterBaptismSlots() {
         let dateFilter = document.getElementById("baptismSlotsFilter").value;

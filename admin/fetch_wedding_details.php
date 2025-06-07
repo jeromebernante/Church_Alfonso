@@ -1,14 +1,15 @@
 <?php
-include 'db_connection.php';
+include '../db_connection.php';
 
 if (isset($_POST['requestId']) && isset($_POST['type'])) {
     $requestId = $_POST['requestId'];
     $type = $_POST['type'];
 
+    // Prepare the query
     if ($type === "Online") {
-        $query = "SELECT id, bride_name, groom_name, contact, wedding_date, payment_receipt, status FROM wedding_requests WHERE id = ?";
+        $query = "SELECT * FROM wedding_requests WHERE id = ?";
     } else {
-        $query = "SELECT id, bride_name, groom_name, contact, wedding_date, payment_receipt FROM walkin_wedding_requests WHERE id = ?";
+        $query = "SELECT * FROM wedding_requests WHERE id = ? AND user_id = 0";
     }
 
     $stmt = $conn->prepare($query);
@@ -16,133 +17,132 @@ if (isset($_POST['requestId']) && isset($_POST['type'])) {
     $stmt->execute();
     $result = $stmt->get_result();
 
-    if ($result->num_rows > 0) {
-        $row = $result->fetch_assoc();
+    if ($row = $result->fetch_assoc()) {
+        $updateUrl = "update_request.php"; // Consistent with Pamisa's update URL naming
 
-        $brideName = htmlspecialchars($row['bride_name']);
-        $groomName = htmlspecialchars($row['groom_name']);
-        $contact = htmlspecialchars($row['contact']);
-        $weddingDate = htmlspecialchars($row['wedding_date']);
-        $paymentReceipt = $row['payment_receipt'] ? 
-            "<a class='receipt-link' href='../uploads/{$row['payment_receipt']}' target='_blank'>View Receipt</a>" : 
-            "<span class='not-found'>No receipt uploaded</span>";
+        echo "<div class='wedding-details'>";
+        echo "<h2>Wedding Details</h2>";
 
-        echo "<div class='blessing-details' id='wedding-details-$requestId'>";
-        echo "<h2>Wedding Request Details</h2>";
-        echo "<p><b>Bride:</b> <input type='text' id='bride_name_$requestId' value='$brideName' disabled></p>";
-        echo "<p><b>Groom:</b> <input type='text' id='groom_name_$requestId' value='$groomName' disabled></p>";
-        echo "<p><b>Contact:</b> <input type='text' id='contact_$requestId' value='$contact' disabled></p>";
-        echo "<p><b>Wedding Date:</b> <input type='date' id='wedding_date_$requestId' value='$weddingDate' disabled></p>";
-        echo "<p><b>Payment Receipt:</b> $paymentReceipt</p>";
+        echo "<form id='editWeddingForm' method='POST' action='" . $updateUrl . "'>";
+        echo "<input type='hidden' name='requestId' value='" . htmlspecialchars($row['id']) . "'>";
+        echo "<p><strong>Bride:</strong> <input type='text' name='bride_name' value='" . htmlspecialchars($row['bride_name']) . "' readonly></p>";
+        echo "<p><strong>Groom:</strong> <input type='text' name='groom_name' value='" . htmlspecialchars($row['groom_name']) . "' readonly></p>";
+        echo "<p><strong>Contact:</strong> <input type='text' name='contact' value='" . htmlspecialchars($row['contact']) . "' readonly></p>";
+        echo "<p><strong>Wedding Date:</strong> <input type='text' name='wedding_date' value='" . date("F j, Y", strtotime($row['wedding_date'])) . "' readonly></p>";
+        echo "<p><strong>Status:</strong> <select name='status'>";
+        $options = ['Pending', 'Accepted'];
+        foreach ($options as $option) {
+            $selected = ($row['status'] == $option) ? 'selected' : '';
+            echo "<option value='" . htmlspecialchars($option) . "' $selected>$option</option>";
+        }
+        echo "</select></p>";
 
-        if ($type === "Online") {
-            $statusColor = ($row['status'] === "Accepted") ? "green" : (($row['status'] === "Rejected") ? "red" : "orange");
-            echo "<p><b>Status:</b> <span style='color: $statusColor;'>{$row['status']}</span></p>";
+        if (!empty($row['payment_receipt'])) {
+            echo "<p><strong>Receipt:</strong> <a href='../" . htmlspecialchars($row['payment_receipt']) . "' target='_blank' class='receipt-link'>View Receipt</a></p>";
+        } else {
+            echo "<p class='not-found'>No receipt uploaded.</p>";
         }
 
-        echo "<button id='editButton' onclick='enableEditing($requestId)'>Edit</button>";
-        echo "<button id='saveButton' onclick='saveWedding($requestId, \"$type\")' style='display:none;'>Save</button>";
-        echo "<button id='deleteButton' onclick='deleteWedding($requestId, \"$type\")'>Delete</button>";
+        echo "<button type='button' id='editButton'>Edit</button>";
+        echo "<button type='submit' id='saveButton' style='display:none;'>Save Changes</button>";
+        echo "<button type='button' id='deleteButton' data-id='" . htmlspecialchars($row['id']) . "' class='delete-btn'>Delete</button>";
 
+        echo "</form>";
         echo "</div>";
     } else {
-        echo "<p class='not-found'>No details found for this request.</p>";
+        echo "<p class='not-found'>Details not found.</p>";
     }
+
+    $stmt->close();
 }
 ?>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-function enableEditing(requestId) {
-    document.getElementById(`bride_name_${requestId}`).disabled = false;
-    document.getElementById(`groom_name_${requestId}`).disabled = false;
-    document.getElementById(`contact_${requestId}`).disabled = false;
-    document.getElementById(`wedding_date_${requestId}`).disabled = false;
+$(document).ready(function() {
+    $(document).on("click", "#editButton", function() {
+        let form = $(this).closest("form"); 
+        form.find("input[name='bride_name'], input[name='groom_name'], input[name='contact'], input[name='wedding_date']").prop("readonly", false);
+        form.find("select[name='status']").prop("disabled", false);
+        
+        $(this).hide(); 
+        form.find("#saveButton").show(); 
+    });
 
-    document.getElementById("editButton").style.display = "none";
-    document.getElementById("saveButton").style.display = "inline-block";
-}
+    $(document).on("submit", "#editWeddingForm", function(event) {
+        event.preventDefault();
+        let form = $(this);
+        let formAction = form.attr("action");
 
-
-function saveWedding(requestId, type) {
-    let brideName = document.getElementById(`bride_name_${requestId}`).value;
-    let groomName = document.getElementById(`groom_name_${requestId}`).value;
-    let contact = document.getElementById(`contact_${requestId}`).value;
-    let weddingDate = document.getElementById(`wedding_date_${requestId}`).value;
-
-    $.ajax({
-        url: "update_request.php",
-        type: "POST",
-        data: {
-            action: "edit",
-            requestId: requestId,
-            type: type,
-            bride_name: brideName,
-            groom_name: groomName,
-            contact: contact,
-            wedding_date: weddingDate
-        },
-        success: function(response) {
-            if (response === "success") {
+        $.ajax({
+            url: formAction,
+            type: "POST",
+            data: form.serialize(),
+            success: function(response) {
                 Swal.fire({
-                    title: "Success!",
-                    text: "Wedding details updated successfully.",
-                    icon: "success"
+                    icon: "success",
+                    title: "Updated!",
+                    text: response,
+                    confirmButtonColor: "#4CAF50"
                 }).then(() => {
-                    location.reload();
+                    form.find("#saveButton").hide();
+                    form.find("#editButton").show();
+                    form.find("input").prop("readonly", true);
+                    form.find("select").prop("disabled", true);
                 });
-            } else {
+            },
+            error: function() {
                 Swal.fire({
-                    title: "Error!",
-                    text: "Error updating details.",
-                    icon: "error"
+                    icon: "error",
+                    title: "Error",
+                    text: "There was an error updating the details.",
+                    confirmButtonColor: "#d33"
                 });
             }
-        }
+        });
     });
-}
 
-function deleteWedding(requestId, type) {
-    Swal.fire({
-        title: "Are you sure?",
-        text: "You won't be able to revert this!",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#d33",
-        cancelButtonColor: "#3085d6",
-        confirmButtonText: "Yes, delete it!"
-    }).then((result) => {
-        if (result.isConfirmed) {
-            $.ajax({
-                url: "update_request.php",
-                type: "POST",
-                data: {
-                    action: "delete",
-                    requestId: requestId,
-                    type: type
-                },
-                success: function(response) {
-                    if (response === "success") {
+    $(document).on("click", "#deleteButton", function() {
+        var requestId = $(this).data("id");
+
+        Swal.fire({
+            title: "Are you sure?",
+            text: "This wedding request will be permanently deleted.",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#3085d6",
+            confirmButtonText: "Yes, delete it!"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: "delete_wedding.php",
+                    type: "POST",
+                    data: { requestId: requestId },
+                    success: function(response) {
                         Swal.fire({
+                            icon: "success",
                             title: "Deleted!",
-                            text: "Wedding request has been deleted.",
-                            icon: "success"
+                            text: "Wedding request deleted successfully.",
+                            confirmButtonColor: "#4CAF50"
                         }).then(() => {
-                            location.reload();
+                            $(".wedding-details").remove();
                         });
-                    } else {
+                    },
+                    error: function() {
                         Swal.fire({
-                            title: "Error!",
-                            text: "Error deleting request.",
-                            icon: "error"
+                            icon: "error",
+                            title: "Error",
+                            text: "There was an error deleting the request.",
+                            confirmButtonColor: "#d33"
                         });
                     }
-                }
-            });
-        }
+                });
+            }
+        });
     });
-}
-
+});
 </script>
 
 <style>
@@ -158,16 +158,31 @@ button {
     margin: 5px;
 }
 
-#editButton { background-color: #f4a261; color: white; }
-#editButton:hover { background-color: #e76f51; }
+#editButton {
+    background-color: #f4a261;
+    color: white;
+}
+#editButton:hover {
+    background-color: #e76f51;
+}
 
-#saveButton { background-color: #2a9d8f; color: white; }
-#saveButton:hover { background-color: #21867a; }
+#saveButton {
+    background-color: #2a9d8f;
+    color: white;
+}
+#saveButton:hover {
+    background-color: #21867a;
+}
 
-#deleteButton { background-color: #e63946; color: white; }
-#deleteButton:hover { background-color: #b71c1c; }
+#deleteButton {
+    background-color: #e63946;
+    color: white;
+}
+#deleteButton:hover {
+    background-color: #b71c1c;
+}
 
-input[type="text"], input[type="date"] {
+input[type="text"], select {
     width: 100%;
     padding: 8px;
     font-size: 14px;
@@ -178,9 +193,12 @@ input[type="text"], input[type="date"] {
     background-color: #f9f9f9;
 }
 
-input:focus { border-color: #4CAF50; background-color: #fff; }
+input[type="text"]:focus, select:focus {
+    border-color: #4CAF50;
+    background-color: #fff;
+}
 
-.blessing-details {
+.wedding-details {
     max-width: 400px;
     background: #fff;
     padding: 20px;
@@ -191,10 +209,29 @@ input:focus { border-color: #4CAF50; background-color: #fff; }
     margin-left: 20px;
 }
 
-.blessing-details h2 { margin-top: 0; font-size: 22px; color: #4CAF50; }
+.wedding-details h2 {
+    margin-top: 0;
+    font-size: 22px;
+    color: #4CAF50;
+}
 
-.receipt-link { color: #007bff; text-decoration: none; font-weight: bold; }
-.receipt-link:hover { text-decoration: underline; }
+.wedding-details p {
+    margin: 8px 0;
+    font-size: 16px;
+}
 
-.not-found { color: #d9534f; font-style: italic; margin-left: 20px; }
+.receipt-link {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: bold;
+}
+.receipt-link:hover {
+    text-decoration: underline;
+}
+
+.not-found {
+    color: #d9534f;
+    font-style: italic;
+    margin-left: 20px;
+}
 </style>

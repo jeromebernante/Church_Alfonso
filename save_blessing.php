@@ -21,7 +21,7 @@ $blessing_time = $_POST['blessing_time'] ?? '';
 $priest_name = $_POST['priest_name'] ?? '';
 $type_of_blessing = $_POST['type_of_blessing'] ?? '';
 $blessing_date = $_POST['blessing_date'] ?? '';
-$status = "Accepted";
+$status = "Pending";
 
 // Validate inputs
 if (empty($name_of_blessed) || empty($name_of_requestor) || empty($blessing_time) || empty($priest_name) || empty($type_of_blessing) || empty($blessing_date)) {
@@ -29,9 +29,14 @@ if (empty($name_of_blessed) || empty($name_of_requestor) || empty($blessing_time
     exit();
 }
 
-// Extract and validate date
-$extracted_date = substr($blessing_date, 0, 10);
-if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $extracted_date) || !checkdate((int)substr($extracted_date, 5, 2), (int)substr($extracted_date, 8, 2), (int)substr($extracted_date, 0, 4))) {
+// Sample data
+
+// Extract the date (last 10 characters)
+$extracted_date = substr($blessing_date, -10);
+
+// Validate date format and ensure it's a valid date
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $extracted_date) || 
+    !checkdate((int)substr($extracted_date, 5, 2), (int)substr($extracted_date, 8, 2), (int)substr($extracted_date, 0, 4))) {
     echo json_encode(["status" => "error", "message" => "Invalid date format."]);
     exit();
 }

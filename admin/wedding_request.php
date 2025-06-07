@@ -1,6 +1,6 @@
-<?php 
+<?php
 session_start();
-include 'db_connection.php';
+include '../db_connection.php';
 
 header('Content-Type: application/json');
 
@@ -9,13 +9,15 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
+$user_id = 0;
 $bride_name = $_POST['brideName'] ?? '';
 $groom_name = $_POST['groomName'] ?? '';
+$priest_name = $_POST['priest_name'] ?? '';
 $contact = $_POST['contact'] ?? '';
 $wedding_date = $_POST['weddingDate'] ?? '';
 
 if (!$bride_name || !$groom_name || !$contact || !$wedding_date) {
-    echo json_encode(["status" => "error", "message" => "All fields are required except the GCash receipt."]);
+    echo json_encode(["status" => "error", "message" => "All fields are required."]);
     exit();
 }
 
@@ -24,62 +26,46 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $wedding_date)) {
     exit();
 }
 
-$sql_priest_check = "SELECT priest_name FROM priest_schedule WHERE date = ?";
-$stmt_priest = $conn->prepare($sql_priest_check);
-$stmt_priest->bind_param("s", $wedding_date);
-$stmt_priest->execute();
-$stmt_priest->store_result();
+// Check priest availability
+$sql_check_priest = "SELECT priest_name FROM priest_schedule WHERE date = ?";
+$stmt_check_priest = $conn->prepare($sql_check_priest);
+$stmt_check_priest->bind_param("s", $wedding_date);
+$stmt_check_priest->execute();
+$stmt_check_priest->store_result();
 
-if ($stmt_priest->num_rows === 0) {
-    echo json_encode(["status" => "error", "message" => "No priest schedule found for the selected date."]);
-    $stmt_priest->close();
+$priest_unavailable = false;
+$date_exists = false;
+
+if ($stmt_check_priest->num_rows > 0) {
+    $stmt_check_priest->bind_result($priest_name);
+    while ($stmt_check_priest->fetch()) {
+        $date_exists = true;
+        if (strtolower(trim($priest_name)) === 'all priests unavailable') {
+            $priest_unavailable = true;
+            break;
+        }
+    }
+}
+$stmt_check_priest->close();
+
+if ($priest_unavailable) {
+    echo json_encode(["status" => "error", "message" => "No priests are available on this date. Please choose another date."]);
     exit();
 }
 
-$stmt_priest->bind_result($scheduled_priest);
-$stmt_priest->fetch();
-$stmt_priest->close();
+$status = $date_exists ? "Pending" : "Accepted";
 
-if (strtolower(trim($scheduled_priest)) === 'all priests unavailable') {
-    echo json_encode(["status" => "error", "message" => "No priests are available on the selected date."]);
-    exit();
-}
-
-$receipt_name = NULL;
-if (!empty($_FILES['gcashReceipt']['name'])) {
-    $target_dir = "uploads/";
-    if (!file_exists($target_dir)) {
-        mkdir($target_dir, 0777, true);
-    }
-
-    $receipt_name = time() . "_" . basename($_FILES['gcashReceipt']["name"]);
-    $target_file = $target_dir . $receipt_name;
-
-    $file_type = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
-    $allowed_types = ["jpg", "jpeg", "png", "pdf"];
-    if (!in_array($file_type, $allowed_types)) {
-        echo json_encode(["status" => "error", "message" => "Invalid file type. Only JPG, PNG, or PDF allowed."]);
-        exit();
-    }
-
-    if (!move_uploaded_file($_FILES['gcashReceipt']["tmp_name"], $target_file)) {
-        echo json_encode(["status" => "error", "message" => "Failed to upload receipt."]);
-        exit();
-    }
-}
-
+// Insert wedding request
 $conn->begin_transaction();
-$sql = "INSERT INTO walkin_wedding_requests (bride_name, groom_name, contact, wedding_date, payment_receipt) 
-        VALUES (?, ?, ?, ?, ?)";
-
+$sql = "INSERT INTO wedding_requests (user_id, bride_name, groom_name, priest_name, contact, wedding_date, status) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("sssss", $bride_name, $groom_name, $contact, $wedding_date, $receipt_name);
+$stmt->bind_param("issssss", $user_id, $bride_name, $groom_name, $priest_name, $contact, $wedding_date, $status);
 
 if ($stmt->execute()) {
     $conn->commit();
     echo json_encode(["status" => "success", "message" => "Wedding request saved successfully!"]);
 } else {
-    error_log("SQL Error: " . $stmt->error); 
     $conn->rollback();
     echo json_encode(["status" => "error", "message" => "Failed to save request."]);
 }

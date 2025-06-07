@@ -4,42 +4,45 @@ include 'db_connection.php';
 if (isset($_POST['date'])) {
     $selectedDate = $_POST['date'];
 
-    // Fetch online baptism requests
+    // Fetch online baptism requests (user_id != 0) with receipt_path
     $query = "
         SELECT 
-            id, 
-            COALESCE(user_id, '') AS user_id, 
-            baptized_name, 
-            COALESCE(parents_name, '') AS parents_name, 
-            COALESCE(ninongs_ninangs, '') AS ninongs_ninangs, 
-            COALESCE(request_date, '') AS request_date, 
-            COALESCE(selected_date, '') AS selected_date, 
-            COALESCE(status, '') AS status, 
-            COALESCE(price, '') AS price, 
-            'Online' AS type 
-        FROM baptism_requests 
-        WHERE selected_date = ?";
+            br.id, 
+            COALESCE(br.user_id, '') AS user_id, 
+            br.baptized_name, 
+            COALESCE(br.parents_name, '') AS parents_name, 
+            COALESCE(br.ninongs_ninangs, '') AS ninongs_ninangs, 
+            COALESCE(br.request_date, '') AS request_date, 
+            COALESCE(br.selected_date, '') AS selected_date, 
+            COALESCE(br.status, '') AS status, 
+            COALESCE(br.price, '') AS price, 
+            'Online' AS type,
+            COALESCE(bp.receipt_path, '') AS receipt_path
+        FROM baptism_requests br
+        LEFT JOIN baptism_payments bp ON br.id = bp.baptism_request_id
+        WHERE br.selected_date = ? AND br.user_id != 0";
 
     $stmt = $conn->prepare($query);
     $stmt->bind_param("s", $selectedDate);
     $stmt->execute();
     $result = $stmt->get_result();
 
-    // Fetch walk-in baptism requests
+    // Fetch walk-in baptism requests (user_id = 0)
     $walkinQuery = "
         SELECT 
             id, 
-            '' AS user_id,  
+            COALESCE(user_id, '') AS user_id,  
             baptized_name, 
             COALESCE(parents_name, '') AS parents_name, 
             COALESCE(ninongs_ninangs, '') AS ninongs_ninangs, 
-            '' AS request_date,  
+            COALESCE(request_date, '') AS request_date,  
             COALESCE(selected_date, '') AS selected_date, 
             COALESCE(status, '') AS status, 
-            '' AS price,  
-            'Walk-in' AS type 
-        FROM walkin_baptism 
-        WHERE selected_date = ?";
+            COALESCE(price, '') AS price,  
+            'Walk-in' AS type,
+            '' AS receipt_path
+        FROM baptism_requests 
+        WHERE selected_date = ? AND user_id = 0";
 
     $walkinStmt = $conn->prepare($walkinQuery);
     $walkinStmt->bind_param("s", $selectedDate);
@@ -84,6 +87,20 @@ if (isset($_POST['date'])) {
             .save-btn:hover {
                 background-color: #0056b3;
             }
+            .delete-btn {
+                background-color: red;
+                color: white;
+                padding: 5px 10px;
+                border: none;
+                cursor: pointer;
+            }
+            .receipt-link {
+                color: #007bff;
+                text-decoration: none;
+            }
+            .receipt-link:hover {
+                text-decoration: underline;
+            }
         </style>";
 
         echo "<table>";
@@ -95,6 +112,7 @@ if (isset($_POST['date'])) {
                 <th>Ninongs/Ninangs</th>
                 <th>Request Date</th>
                 <th>Selected Date</th>
+                <th>Receipt</th>
                 <th>Status</th>
                 <th>Price</th>
                 <th>Type</th>
@@ -110,6 +128,7 @@ if (isset($_POST['date'])) {
                     <td contenteditable='true' class='editable' data-column='ninongs_ninangs'>{$row['ninongs_ninangs']}</td>
                     <td>{$row['request_date']}</td>
                     <td>{$row['selected_date']}</td>
+                    <td>" . (!empty($row['receipt_path']) ? "<a href='../{$row['receipt_path']}' target='_blank' class='receipt-link'>View Receipt</a>" : "-") . "</td>
                     <td>
                         <select class='status-dropdown' data-column='status'>
                             <option value='Pending' " . ($row['status'] == 'Pending' ? 'selected' : '') . ">Pending</option>
@@ -121,9 +140,8 @@ if (isset($_POST['date'])) {
                     <td><b>{$row['type']}</b></td>
                     <td>
                         <button class='save-btn'>Save</button>
-                        <button class='delete-btn' style='background-color: red; color: white; padding: 5px 10px; border: none; cursor: pointer;'>Delete</button>
+                        <button class='delete-btn'>Delete</button>
                     </td>
-
                   </tr>";
         }
 
@@ -136,6 +154,7 @@ if (isset($_POST['date'])) {
                     <td contenteditable='true' class='editable' data-column='ninongs_ninangs'>{$row['ninongs_ninangs']}</td>
                     <td>{$row['request_date']}</td>
                     <td>{$row['selected_date']}</td>
+                    <td>-</td>
                     <td>
                         <select class='status-dropdown' data-column='status'>
                             <option value='Pending' " . ($row['status'] == 'Pending' ? 'selected' : '') . ">Pending</option>
@@ -145,8 +164,10 @@ if (isset($_POST['date'])) {
                     </td>
                     <td>{$row['price']}</td>
                     <td><b>{$row['type']}</b></td>
-                    <td><button class='save-btn'>Save</button>
-                    <button class='delete-btn' style='background-color: red; color: white; padding: 5px 10px; border: none; cursor: pointer;'>Delete</button></td>
+                    <td>
+                        <button class='save-btn'>Save</button>
+                        <button class='delete-btn'>Delete</button>
+                    </td>
                   </tr>";
         }
 

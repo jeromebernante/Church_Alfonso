@@ -80,9 +80,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
     ?>
     <header class="header" id="header">
-        <div class="header_toggle">
-            <i class='bx bx-menu' id="header-toggle"></i>
-        </div>
+
     </header><br>       
     <div class="admin-greeting">Good Day, Admin!</div>
     <center><div id="datetime" class="datetime"></div> </center>
@@ -200,7 +198,7 @@ setInterval(updateDateTime, 60000);
     text-align: center;
     font-size: 35px;
     font-weight: bold;
-    color: #2ecc71; /
+    color: #2ecc71; 
     margin-top: 70px;
 }
 

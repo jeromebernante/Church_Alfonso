@@ -1,8 +1,40 @@
 <?php
 session_start();
-include '../db_connection.php';
+if (!isset($_SESSION['user_id'])) {
+    header("Location: index.php");
+    exit();
+}
+
+include 'db_connection.php';
+$user_id = $_SESSION['user_id'];
+
+$sql = "SELECT name FROM users WHERE id = ?";
+$stmt = $conn->prepare($sql);
+
+if ($stmt === false) {
+    die('MySQL prepare error: ' . $conn->error);
+}
+
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$stmt->bind_result($user_name);
+$stmt->fetch();
+$stmt->close();
+
+date_default_timezone_set('Asia/Manila');
+$current_datetime = date("l, F j, Y g:i A");
+
+
+$sql_notif = "SELECT COUNT(*) FROM notifications WHERE user_id = ? AND status = 'success'";
+$stmt_notif = $conn->prepare($sql_notif);
+$stmt_notif->bind_param("i", $user_id);
+$stmt_notif->execute();
+$stmt_notif->bind_result($notif_count);
+$stmt_notif->fetch();
+$stmt_notif->close();
 
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -12,68 +44,79 @@ include '../db_connection.php';
     <title>Parish of the Holy Cross</title>
     <link rel="stylesheet" href="stylesd.css">
     <link rel="stylesheet" href="buttons.css">
+
     <link rel="icon" href="imgs/logo.png" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@3.10.2/dist/fullcalendar.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@3.10.2/dist/fullcalendar.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@3.10.2/dist/fullcalendar.min.js"></script>
-    <script src="scriptd.js"></script>
 </head>
 
 <body id="bodyTag">
     <header class="header" id="header">
-        <!-- Header content goes here -->
     </header>
 
-    <?php include 'sidebar.php'; ?>
+    <div class="l-navbar" id="nav-bar">
+        <nav class="nav">
+            <div>
+                <a href="#" class="nav_logo">
+                    <img src="imgs/logo.png" alt="Parish Logo"
+                        style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%;">
+                    <span class="nav_logo-name">Parish of the Holy Cross</span>
+                </a>
+                <div class="nav_list">
+                    <a href="dashboard.php" class="nav_link">
+                        <i class='bx bx-grid-alt nav_icon'></i>
+                        <span class="nav_name">Dashboard</span>
+                    </a>
+                    <a href="event_request.php" class="nav_link active">
+                        <i class='bx bx-calendar-event nav_icon'></i>
+                        <span class="nav_name">Event Request</span>
+                    </a>
+                    <a href="notifications.php" class="nav_link" id="notification-link">
+                        <i class='bx bx-bell nav_icon'></i>
+                        <span class="nav_name">Notifications</span>
+                        <?php if ($notif_count > 0): ?>
+                            <span class="notification-badge"><?php echo $notif_count; ?></span>
+                        <?php endif; ?>
+                    </a>
+                    <a href="history.php" class="nav_link">
+                        <i class='bx bx-message-square-detail nav_icon'></i>
+                        <span class="nav_name">History</span>
+                    </a>
+                    <a href="profile.php" class="nav_link">
+                        <i class='bx bx-user nav_icon'></i>
+                        <span class="nav_name">My Profile</span>
+                    </a>
+                </div>
+            </div>
+            <a href="#" class="nav_link" id="logout">
+                <i class='bx bx-log-out nav_icon'></i>
+                <span class="nav_name">Sign Out</span>
+            </a>
+        </nav>
+    </div>
 
-    <div class="admin-greeting">Good Day, Admin!</div>
-    <center>
-        <div id="datetime" class="datetime"></div>
-    </center>
 
+    <section class="welcome">
+        <center>
+            <h2>Welcome, <?php echo htmlspecialchars($user_name); ?>!</h2>
+        </center>
+        <center>
+            <p>Current Date and Time: <?php echo $current_datetime; ?></p>
+        </center>
+    </section>
     <section class="about-us">
-        <h2>Walk-In Registration</h2>
+        <h2>About Us</h2>
         <p class="justified">
-            This section allows you to register new <b>walk-in requestors</b> for parish events or services.
-            Remember to enter the payment information to complete the request process.
-            Ensuring the payment is recorded properly will help maintain accurate records and facilitate a smooth transaction.
+            We are a community dedicated to spreading love, peace, and faith. Our parish in Valenzuela City is a place
+            for everyone to come together, learn, grow, and find inspiration. With a rich history, we continue to serve
+            with passion, welcoming all who wish to be a part of our mission. Join us in our journey as we strive to
+            make a positive impact on our community and the world.
         </p>
     </section>
-
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            Swal.fire({
-                title: "Walk-In Registration",
-                text: "Since it's a walk-in registration, if the receipt is not available but already paid, there's no need to upload the receipt.",
-                icon: "info",
-                confirmButtonText: "Okay"
-            });
-        });
-
-        <?php if (!empty($alertMessage)) echo $alertMessage; ?>
-
-        function updateDateTime() {
-            let now = new Date();
-            let options = {
-                timeZone: 'Asia/Manila',
-                hour12: true,
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            };
-            document.getElementById('datetime').innerHTML = new Intl.DateTimeFormat('en-PH', options).format(now);
-        }
-
-        updateDateTime();
-        setInterval(updateDateTime, 60000);
-    </script>
-
     <section class="main-content">
         <div class="calendar-container"
             style="display: flex; justify-content: space-between; gap: 20px; padding: 20px;">
@@ -88,129 +131,193 @@ include '../db_connection.php';
 
 
 
-            <!-- Wedding Modal -->
-            <div id="weddingModal" class="modal">
-                <div class="modal-content">
-                    <span class="close">×</span>
-                    <h2>Wedding Service</h2>
-                    <p style="color: red; font-weight: bold; font-size: 15px;">⚠️ You are allowed to set a wedding
-                        request at least 3 months after the seminar.</p>
+                <!-- Wedding Modal -->
+                <div id="weddingModal" class="modal">
+                    <div class="modal-content">
+                        <span class="close">&times;</span>
+                        <h2>Wedding Service</h2>
+                        <p style="color: red; font-weight: bold; font-size: 15px;">⚠️ You are allowed to set a wedding
+                            request at least 3 months after the seminar.</p>
 
-                    <!-- Wedding Form -->
-                    <form id="weddingForm" enctype="multipart/form-data">
-                        <label for="brideName">Bride's Name:</label>
-                        <input type="text" id="brideName" name="brideName" required>
+                        <div
+                            style="border: 1px solid #ccc; border-radius: 10px; padding: 15px; background-color: #f9f9f9; margin-bottom: 20px;">
+                            <h3 style="margin-top: 0; color: #333;">💒 Wedding Payment Information</h3>
 
-                        <label for="groomName"><br>Groom's Name:</label>
-                        <input type="text" id="groomName" name="groomName" required>
+                            <p style="font-size: 16px; font-weight: bold; color: #000;">💰 Amount: <span
+                                    style="color: #4CAF50;">₱7,000.00</span></p>
 
-                        <label for=""><br>Select Priest: <br></label>
-                        <select name="priest_name" id="priest_name" style="padding:10px">
-                            <?php
-                            $select_priest = mysqli_query($conn, 'SELECT * FROM priests');
-                            if (mysqli_num_rows($select_priest) > 0) {
-                                while ($row = mysqli_fetch_assoc($select_priest)) {
-                            ?>
-                                    <option value="<?php echo $row['name'] ?>"><?php echo $row['name'] ?></option>
-                            <?php
+                            <p style="font-size: 15px; color: #000;">📱 GCash Account Name: <strong>CH*****
+                                    AL*****</strong><br>
+                                📞 GCash Number: <strong>0991 189 5057</strong></p>
+
+                            <div style="text-align: center; margin: 10px 0;">
+                                <img src="./imgs/qr.png" alt="GCash QR Code"
+                                    style="max-width: 200px; border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.1);">
+                            </div>
+
+                            <p style="font-size: 14px; color: #666; font-style: italic;">* Please upload a screenshot of
+                                your GCash payment receipt below to confirm your booking.</p>
+                        </div>
+
+                        <br>
+
+                        <!-- Wedding Form -->
+                        <form id="weddingForm" enctype="multipart/form-data">
+                            <label for="brideName">Bride's Name:</label>
+                            <input type="text" id="brideName" name="brideName" required>
+
+                            <label for="groomName"><br>Groom's Name:</label>
+                            <input type="text" id="groomName" name="groomName" required>
+
+                            <label for=""><br>Select Priest: <br></label>
+
+                            <select name="priest_name" id="priest_name" style="padding:10px">
+
+                                <?php
+
+                                $select_priest = mysqli_query($conn, 'SELECT * FROM priests');
+
+                                if (mysqli_num_rows($select_priest) > 0) {
+                                    while ($row = mysqli_fetch_assoc($select_priest)) {
+                                ?>
+
+                                        <option value="<?php echo $row['name'] ?>"><?php echo $row['name'] ?></option>
+
+                                <?php
+                                    }
                                 }
-                            }
-                            ?>
-                        </select>
+                                ?>
+                            </select>
 
-                        <label for="contact"><br>Contact Number:</label>
-                        <input type="text" id="contact" name="contact" required>
+                            <label for="contact"><br>Contact Number:</label>
+                            <input type="text" id="contact" name="contact" required>
 
-                        <label for="weddingDate"><br>Select Wedding Date:</label>
-                        <input type="date" id="weddingDate" name="weddingDate" required>
+                            <label for="weddingDate"><br>Select Wedding Date:</label>
+                            <input type="date" id="weddingDate" name="weddingDate" required>
 
-                        <button type="submit" style="background-color: #4CAF50; border: none; color: white; padding: 15px 70px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 10px 2px; cursor: pointer; border-radius: 12px;">Submit Request</button>
-                    </form>
+                            <label for="gcashReceipt"><br>Upload GCash Receipt:</label>
+                            <input type="file" id="gcashReceipt" name="gcashReceipt"
+                                accept="image/png, image/jpeg, image/jpg" required>
 
-                    <button id="closeModalBtn" style="background-color: rgb(189, 32, 32); border: none; color: white; padding: 15px 105px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; border-radius: 12px;">Close</button>
+                            <button type="submit" style="background-color: #4CAF50; border: none; color: white; padding: 15px 70px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 10px 2px; cursor: pointer; border-radius: 12px;">Submit Request</button>
+                        </form>
+
+                        <button id="closeModalBtn" style="background-color: rgb(189, 32, 32); border: none; color: white; padding: 15px 105px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; border-radius: 12px;">Close</button>
+                    </div>
                 </div>
-            </div>
 
-            <script>
-                document.getElementById("weddingForm").addEventListener("submit", function(event) {
-                    event.preventDefault();
+                <script>
+                    document.getElementById("weddingForm").addEventListener("submit", function(event) {
+                        event.preventDefault();
 
-                    let brideName = document.getElementById("brideName").value.trim();
-                    let groomName = document.getElementById("groomName").value.trim();
-                    let priestName = document.getElementById("priest_name").value;
-                    let contact = document.getElementById("contact").value.trim();
-                    let weddingDate = document.getElementById("weddingDate").value;
+                        let formData = new FormData(this);
 
-                    if (!brideName || !groomName || !contact || !weddingDate) {
-                        Swal.fire({
-                            icon: "error",
-                            title: "Missing Information",
-                            text: "Please fill in all fields before submitting.",
-                            confirmButtonColor: "#d33"
-                        });
-                        return;
-                    }
-
-                    let formData = new FormData(this);
-
-                    fetch("wedding_request.php", {
-                        method: "POST",
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log("Server Response:", data); // <-- Logging the server response
-
-                        if (data.status === "success") {
-                            Swal.fire("Success!", data.message, "success").then(() => {
-                                document.getElementById("weddingModal").style.display = "none";
-                                document.getElementById("weddingForm").reset();
-                            });
-                        } else {
-                            Swal.fire("Error!", data.message, "error");
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Fetch Error:", error);
+                        fetch("wedding_request.php", {
+                                method: "POST",
+                                body: formData
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.status === "success") {
+                                    Swal.fire("Success!", data.message, "success").then(() => {
+                                        document.getElementById("weddingModal").style.display = "none";
+                                        document.getElementById("weddingForm").reset();
+                                    });
+                                } else {
+                                    Swal.fire("Error!", data.message, "error");
+                                }
+                            })
+                            .catch(error => console.error("Error:", error));
                     });
-                });
+                </script>
 
-                document.getElementById("wedding").addEventListener("click", function() {
-                    document.getElementById("weddingModal").style.display = "flex";
-                });
+                <script>
+                    document.getElementById("wedding").addEventListener("click", function() {
+                        document.getElementById("weddingModal").style.display = "flex";
+                    });
 
-                document.querySelector(".close").addEventListener("click", function() {
-                    document.getElementById("weddingModal").style.display = "none";
-                });
+                    document.querySelector(".close").addEventListener("click", function() {
+                        document.getElementById("weddingModal").style.display = "none";
+                    });
 
-                document.getElementById("closeModalBtn").addEventListener("click", function() {
-                    document.getElementById("weddingModal").style.display = "none";
-                });
+                    document.getElementById("closeModalBtn").addEventListener("click", function() {
+                        document.getElementById("weddingModal").style.display = "none";
+                    });
 
-                window.addEventListener("click", function(event) {
-                    let modal = document.getElementById("weddingModal");
-                    if (event.target === modal) {
-                        modal.style.display = "none";
-                    }
-                });
+                    window.addEventListener("click", function(event) {
+                        let modal = document.getElementById("weddingModal");
+                        if (event.target === modal) {
+                            modal.style.display = "none";
+                        }
+                    });
 
-                document.getElementById("weddingDate").addEventListener("input", function() {
-                    let selectedDate = new Date(this.value);
-                    let minDate = new Date();
-                    minDate.setMonth(minDate.getMonth() + 3);
+                    document.getElementById("weddingDate").addEventListener("input", function() {
+                        let selectedDate = new Date(this.value);
+                        let minDate = new Date();
+                        minDate.setMonth(minDate.getMonth() + 3);
 
-                    if (selectedDate < minDate) {
+                        if (selectedDate < minDate) {
+                            Swal.fire({
+                                icon: "warning",
+                                title: "Invalid Date",
+                                text: "Please select a wedding date at least 3 months from today.",
+                                confirmButtonColor: "#d33"
+                            });
+                            this.value = "";
+                        }
+                    });
+
+                    document.getElementById("gcashReceipt").addEventListener("change", function() {
+                        let file = this.files[0];
+                        let allowedExtensions = ["image/png", "image/jpeg", "image/jpg"];
+
+                        if (file && !allowedExtensions.includes(file.type)) {
+                            Swal.fire({
+                                icon: "error",
+                                title: "Invalid File Type",
+                                text: "Please upload an image file (PNG, JPG, JPEG) only.",
+                                confirmButtonColor: "#d33"
+                            });
+                            this.value = "";
+                        }
+                    });
+
+                    document.getElementById("weddingForm").addEventListener("submit", function(event) {
+                        event.preventDefault();
+
+                        let brideName = document.getElementById("brideName").value.trim();
+                        let groomName = document.getElementById("groomName").value.trim();
+                        let priestName = document.getElementById("priest_name").value;
+                        let contact = document.getElementById("contact").value.trim();
+                        let weddingDate = document.getElementById("weddingDate").value;
+                        let gcashReceipt = document.getElementById("gcashReceipt").files[0];
+
+                        if (!brideName || !groomName || !contact || !weddingDate || !gcashReceipt) {
+                            Swal.fire({
+                                icon: "error",
+                                title: "Missing Information",
+                                text: "Please fill in all fields and upload your GCash receipt before submitting.",
+                                confirmButtonColor: "#d33"
+                            });
+                            return;
+                        }
+
                         Swal.fire({
-                            icon: "warning",
-                            title: "Invalid Date",
-                            text: "Please select a wedding date at least 3 months from today.",
-                            confirmButtonColor: "#d33"
+                            icon: "success",
+                            title: "Request Submitted",
+                            html: `<strong>Bride:</strong> ${brideName}<br>
+                   <strong>Groom:</strong> ${groomName}<br>
+                   <strong>Priest:</strong> ${priestName}<br>
+                   <strong>Contact Number:</strong> ${contact}<br>
+                   <strong>Date:</strong> ${weddingDate}<br>
+                   <strong>GCash Receipt Uploaded</strong> ✅`,
+                            confirmButtonColor: "#28a745"
+                        }).then(() => {
+                            document.getElementById("weddingModal").style.display = "none";
+                            document.getElementById("weddingForm").reset();
                         });
-                        this.value = "";
-                    }
-                });
-            </script>
-
+                    });
+                </script>
 
 
                 <div id="service-details" style="padding: 20px; margin-top: 20px; border-top: 1px solid #ccc;">
@@ -248,10 +355,25 @@ include '../db_connection.php';
                             <option value="Wedding Anniversary">Wedding Anniversary</option>
                             <option value="Souls">Souls</option>
                         </select>
+                        <div class="payment-card">
 
+                            <h2 style="margin-bottom: 10px; font-size: 24px;">GCash Payment</h2>
+                            <p style="font-size: 15px; color: #333;">Please upload a screenshot of your GCash payment.</p>
+
+                            <div style="background-color: #f9f9f9; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                                <img src="./imgs/qr.png" alt="GCash QR Code" style="max-width: 180px; border-radius: 8px; margin-bottom: 10px;">
+                                <p style="margin: 5px 0; font-size: 14px;"><strong>Amount to Pay:</strong> ₱100</p>
+                                <p style="margin: 5px 0; font-size: 14px;"><strong>GCash Number:</strong> 0991 189 5057</p>
+                                <p style="margin: 5px 0; font-size: 14px;"><strong>GCash Name:</strong> CHR**** AL****</p>
+                            </div>
+
+                            <input type="file" id="gcash-receipt" accept="image/*,application/pdf" required
+                                style="margin-bottom: 15px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 100%; box-sizing: border-box;">
+
+                        </div>
                         <button type="submit" id="save-pamisa" class="service-submit-btn" style="background-color: #4CAF50; color: white; border: none; padding: 12px 20px; 
-                            font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; 
-                            transition: background 0.3s ease-in-out; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);">
+                    font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; 
+                    transition: background 0.3s ease-in-out; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);">
                             Save Pamisa
                         </button>
 
@@ -292,6 +414,8 @@ include '../db_connection.php';
                             Save Baptism
                         </button>
                     </form>
+
+                    <button id="proceed-payment" style="display: none; margin-top: 15px;">Proceed to Payment</button>
 
                     <!-- Blessing Form -->
                     <form id="blessing-form" style="display: none; margin-top: 20px;">
@@ -344,6 +468,29 @@ include '../db_connection.php';
                             <option value="For Business">For Business</option>
                         </select>
 
+                        <!-- GCash Section -->
+                        <div
+                            style="margin-bottom: 25px; padding: 20px; border: 1px solid #ddd; border-radius: 12px; background-color: #f9f9f9; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                            <h3 style="margin-top: 0; font-size: 18px; font-weight: bold; color: #333;">🙏 Donate via
+                                GCash</h3>
+
+                            <img src="./imgs/qr.png" alt="GCash QR Code"
+                                style="max-width: 200px; border-radius: 10px; margin: 15px 0; box-shadow: 0 0 5px rgba(0,0,0,0.1);">
+
+                            <p style="margin: 0; font-size: 16px; font-weight: 600; color: #000;">📱 GCash Number: <span
+                                    style="color: #4CAF50;">0991 189 5057</span></p>
+
+                            <p style="font-size: 14px; color: #555; margin-top: 8px;">💡 <em>Any donation will do. Thank
+                                    you for your generosity!</em></p>
+                        </div>
+
+                        <!-- Donation Receipt -->
+                        <label for="donation-receipt" style="font-weight: bold; margin-bottom: 5px;">GCash or Bank
+                            Transfer Receipt for Donation:</label>
+                        <input type="file" id="donation-receipt" name="donation_receipt" class="input-field"
+                            accept="image/*,application/pdf"
+                            style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
+
                         <!-- Submit Button -->
                         <button type="submit" id="save-blessing" class="service-submit-btn" style="background-color: #4CAF50; color: white; border: none; padding: 12px 20px; 
                             font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; 
@@ -368,7 +515,7 @@ include '../db_connection.php';
                     <p style="font-size: 15px;">Please upload a screenshot of your GCash payment.</p>
 
                     <div style="background-color: #f9f9f9; border-radius: 8px; padding: 15px; margin: 15px 0;">
-                        <img src="../imgs/qr.png" alt="GCash QR Code"
+                        <img src="./imgs/qr.png" alt="GCash QR Code"
                             style="max-width: 180px; border-radius: 8px; margin-bottom: 10px;">
                         <p style="margin: 5px 0;"><strong>Amount to Pay:</strong> ₱100 per head</p>
                         <p style="margin: 5px 0;"><strong>GCash Number:</strong> 0991 189 5057</p>
@@ -392,7 +539,7 @@ include '../db_connection.php';
         </div>
 
     </section>
-
+    
     <div id="loading-spinner"
         style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); justify-content: center; align-items: center; z-index: 9999;">
         <div
@@ -439,7 +586,7 @@ include '../db_connection.php';
 
             <div style="margin: 20px 0; padding: 15px; background-color: #f9f9f9; border-radius: 8px;">
                 <h3 style="margin-top: 0; font-size: 16px; color: #333;">📱 GCash Details</h3>
-                <img src="../imgs/qr.png" alt="GCash QR Code"
+                <img src="./imgs/qr.png" alt="GCash QR Code"
                     style="max-width: 180px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.1);">
                 <p style="margin: 0; font-weight: bold; font-size: 15px;">GCash Number: <span
                         style="color: #4CAF50;">0991 189 5057</span></p>
@@ -884,20 +1031,44 @@ include '../db_connection.php';
                 formData.append('name_of_intended', $('#name-of-intended').val().trim());
                 formData.append('name_of_requestor', $('#name-of-requestor').val().trim());
                 formData.append('pamisa_type', $('#pamisa-type').val());
-                formData.append('selected_date', $('#service-info').text().match(/\d{4}-\d{2}-\d{2}/)[0]);
                 formData.append('selected_time', $('#pamisa-time').val());
+
+                // Extract and validate selected_date
+                let selectedDateMatch = $('#service-info').text().match(/\d{4}-\d{2}-\d{2}/);
+                let selectedDate = selectedDateMatch ? selectedDateMatch[0] : '';
+                formData.append('selected_date', selectedDate);
+
+                // Add GCash receipt file
                 formData.append('gcash_receipt', $('#gcash-receipt')[0].files[0]);
 
                 // Client-side validation
-                if (!formData.get('name_of_intended') || !formData.get('name_of_requestor') || !formData.get('pamisa_type') || !formData.get('selected_time')) {
+                if (!formData.get('name_of_intended') || 
+                    !formData.get('name_of_requestor') || 
+                    !formData.get('pamisa_type') || 
+                    !formData.get('selected_date') || 
+                    !formData.get('selected_time')) {
                     $('#loading-spinner').hide();
-                    Swal.fire("Error", "Please fill out all required fields.", "error");
+                    Swal.fire("Error", "Please fill out all required fields, including a valid date.", "error");
                     return;
                 }
+
+                // Optional: Validate date format (redundant here since match ensures YYYY-MM-DD, but kept for robustness)
+                const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                if (selectedDate && !dateRegex.test(selectedDate)) {
+                    $('#loading-spinner').hide();
+                    Swal.fire("Error", "Please provide a valid date in YYYY-MM-DD format.", "error");
+                    return;
+                }
+
                 if (!formData.get('gcash_receipt')) {
                     $('#loading-spinner').hide();
                     Swal.fire("Error", "Please upload a GCash receipt.", "error");
                     return;
+                }
+
+                // Log formData entries for debugging
+                for (let [key, value] of formData.entries()) {
+                    console.log(key, value);
                 }
 
                 $.ajax({
@@ -907,7 +1078,7 @@ include '../db_connection.php';
                     contentType: false,
                     processData: false,
                     success: function(response) {
-                        console.log(response);
+                        console.log("response: "+ response);
                         
                         let res;
                         try {
@@ -925,12 +1096,7 @@ include '../db_connection.php';
                                 title: "Success",
                                 text: res.message
                             }).then(() => {
-                                $('#proceed-payment').show();
-                                if ($.fn.fullCalendar) {
-                                    $('#calendar').fullCalendar('refetchEvents');
-                                } else {
-                                    console.warn('FullCalendar is not initialized.');
-                                }
+                                location.reload();
                             });
                         } else {
                             Swal.fire({
@@ -1066,8 +1232,6 @@ include '../db_connection.php';
                     data: JSON.stringify(data),
                     contentType: "application/json",
                     success: function(response) {
-                        console.log(response);
-                        
                         $('#loading-spinner').hide();
                         let res;
                         let additionalNinongs = Math.max(0, ninongsNinangs.length - 2);
@@ -1082,25 +1246,31 @@ include '../db_connection.php';
                                 Swal.fire({
                                     icon: "success",
                                     title: "Success",
-                                    text: "Baptism request saved.",
+                                    text: "Baptism request saved. Please proceed to payment.",
                                     allowOutsideClick: false
                                 }).then(() => {
-                                    console.log(response);
-                                    
+                                    $('#payment-modal-baptism').fadeIn();
                                 });
                             } else {
                                 Swal.fire("Error", res.message, "error");
                             }
                         } catch (e) {
-                            console.log(e);
-                            
+                            $('#total-payment').text(`Total Amount: ₱${totalAmount}`);
+                            $('#baptism-payment-amount').text(`Total to Pay: ₱${totalAmount}`);
+
+                            Swal.fire({
+                                icon: "success",
+                                title: "Success",
+                                text: "Baptism request saved. Please proceed to payment.",
+                                allowOutsideClick: false
+                            }).then(() => {
+                                $('#payment-modal-baptism').fadeIn();
+                            });
                         }
                     },
-                    error: function(e) {
+                    error: function() {
                         $('#loading-spinner').hide();
                         Swal.fire("Oops...", "Something went wrong. Please try again!", "error");
-                        console.log(e);
-                        
                     }
                 });
             });
@@ -1157,8 +1327,14 @@ include '../db_connection.php';
                     return;
                 }
 
+                // Get the payment amount from the DOM and log it
+                let paymentAmountText = $('#baptism-payment-amount').text();
+                console.log('Baptism Payment Amount:', paymentAmountText);
+                // Total to Pay: ₱560
+
                 let formData = new FormData();
                 formData.append('gcash_receipt_baptism', fileInput);
+                formData.append('payment_amount', paymentAmountText);
 
                 $('#loading-spinner').css('display', 'flex');
 
@@ -1235,40 +1411,6 @@ include '../db_connection.php';
     </script>
 
     <style>
-        @keyframes spin {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .header {
-            background: #2c3e50;
-            color: white;
-        }
-
-        .datetime {
-            text-align: center;
-            font-size: 18px;
-            color: #555;
-            margin-bottom: 20px;
-        }
-
-        .admin-greeting {
-            text-align: center;
-            font-size: 35px;
-            font-weight: bold;
-            color: rgb(88, 177, 90);
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-            background-color: rgb(241, 243, 240);
-        }
-
         .notification-badge {
             background: red;
             color: white;
@@ -1349,7 +1491,7 @@ include '../db_connection.php';
         }
 
         .submit-btn {
-            background-color: #2c3e50;
+            background-color: #4CAF50;
             color: white;
             border: none;
             cursor: pointer;
@@ -1381,22 +1523,33 @@ include '../db_connection.php';
             color: black;
             font-size: 15px;
         }
+
+        @media (max-width: 600px) {
+            .modal-content {
+                width: 95%;
+                max-width: 400px;
+            }
+        }
     </style>
 
-
+    <script src="scriptd.js"></script>
     <footer>
         <div class="footer-container">
             <div class="footer-about">
                 <h3>About Parish of the Holy Cross</h3>
                 <p>
-                    The Parish of the Holy Cross is a sacred place of worship, where the community comes together to celebrate faith, hope, and love. Whether you're seeking spiritual growth, a peaceful moment of reflection, or a place to connect with others, our church provides a welcoming environment for all.
+                    The Parish of the Holy Cross is a sacred place of worship, where the community comes together to
+                    celebrate faith, hope, and love. Whether you're seeking spiritual growth, a peaceful moment of
+                    reflection, or a place to connect with others, our church provides a welcoming environment for
+                    all.
                 </p>
+
             </div>
             <div class="footer-contact">
                 <h3>Contact Us</h3>
                 <p>Email: holycrossparish127@yahoo.com</p>
                 <p>Phone: 28671581</p>
-                <p>Address: Gen. T. De Leon, Valenzuela, Philippines, 1442</p>
+                <p>Address: Gen. T. De Leon, Valenzuela, Philippines, 1442 </p>
             </div>
             <div class="footer-socials">
                 <h3>Follow Us</h3>
@@ -1404,7 +1557,7 @@ include '../db_connection.php';
             </div>
         </div>
         <div class="footer-bottom">
-            <p>© 2025 Parish of the Holy Cross. All rights reserved.</p>
+            <p>&copy; 2025 Parish of the Holy Cross. All rights reserved.</p>
         </div>
     </footer>
 </body>

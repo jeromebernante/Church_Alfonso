@@ -64,7 +64,7 @@ function showLoginError() {
                     icon: 'error',
                     confirmButtonText: 'Try Again'
                 }).then(() => {
-                    window.location.href = '/Church/index.php';
+                    window.location.href = 'index.php';
                 });
             });
           </script>";
