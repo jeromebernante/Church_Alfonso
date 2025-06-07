@@ -29,8 +29,6 @@ if (empty($name_of_blessed) || empty($name_of_requestor) || empty($blessing_time
     exit();
 }
 
-// Sample data
-
 // Extract the date (last 10 characters)
 $extracted_date = substr($blessing_date, -10);
 
@@ -44,7 +42,7 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $extracted_date) ||
 // Validate time and convert to 24-hour format
 $blessing_time_24 = date('H:i:s', strtotime($blessing_time));
 if (!$blessing_time_24) {
-    echo json_encode(["status" => "error", "message" => "Invalid time format2."]);
+    echo json_encode(["status" => "error", "message" => "Invalid time format."]);
     exit();
 }
 
@@ -95,69 +93,77 @@ if ($count > 0) {
 }
 
 // Handle file upload
-$target_dir = "uploads/";
+$receipt_path = null; // Default to null
+$target_dir = "Uploads/";
 if (!file_exists($target_dir)) {
     mkdir($target_dir, 0755, true);
 }
 
-$receipt_file = $_FILES["donation_receipt"];
-$receipt_path = $target_dir . uniqid() . '_' . basename($receipt_file["name"]);
-$file_type = strtolower(pathinfo($receipt_path, PATHINFO_EXTENSION));
+if (!empty($_FILES["donation_receipt"]["name"]) && $_FILES["donation_receipt"]["error"] === UPLOAD_ERR_OK) {
+    $receipt_file = $_FILES["donation_receipt"];
+    $receipt_path = $target_dir . uniqid() . '_' . basename($receipt_file["name"]);
+    $file_type = strtolower(pathinfo($receipt_path, PATHINFO_EXTENSION));
 
-$allowed_types = ["jpg", "jpeg", "png", "pdf"];
-if (!in_array($file_type, $allowed_types)) {
-    echo json_encode(["status" => "error", "message" => "Invalid file format. Only JPG, PNG, and PDF allowed."]);
-    exit();
-}
+    $allowed_types = ["jpg", "jpeg", "png", "pdf"];
+    if (!in_array($file_type, $allowed_types)) {
+        echo json_encode(["status" => "error", "message" => "Invalid file format. Only JPG, PNG, and PDF allowed."]);
+        exit();
+    }
 
-if ($receipt_file["size"] > 5 * 1024 * 1024) {
-    echo json_encode(["status" => "error", "message" => "File size exceeds 5MB limit."]);
-    exit();
-}
+    if ($receipt_file["size"] > 5 * 1024 * 1024) {
+        echo json_encode(["status" => "error", "message" => "File size exceeds 5MB limit."]);
+        exit();
+    }
 
-if (move_uploaded_file($receipt_file["tmp_name"], $receipt_path)) {
-    // Get user email
-    $sql_user = "SELECT email FROM users WHERE id = ?";
-    $stmt_user = $conn->prepare($sql_user);
-    $stmt_user->bind_param("i", $user_id);
-    $stmt_user->execute();
-    $stmt_user->bind_result($user_email);
-    $stmt_user->fetch();
-    $stmt_user->close();
-
-    // Insert blessing request
-    $sql = "INSERT INTO blessings_requests (user_id, name_of_blessed, priest_name, name_of_requestor, blessing_time, type_of_blessing, blessing_date, receipt_path, status) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-    if ($stmt === false) {
-        unlink($receipt_path);
-        error_log("Database error: " . $conn->error);
-        $notification_message = "Database error while saving blessing request.";
+    if (!move_uploaded_file($receipt_file["tmp_name"], $receipt_path)) {
+        $notification_message = "Failed to upload receipt.";
         $notification_status = "error";
         goto save_notification;
     }
+}
 
-    $stmt->bind_param("issssssss", $user_id, $name_of_blessed, $priest_name, $name_of_requestor, $blessing_time_24, $type_of_blessing, $extracted_date, $receipt_path, $status);
+// Get user email
+$sql_user = "SELECT email FROM users WHERE id = ?";
+$stmt_user = $conn->prepare($sql_user);
+$stmt_user->bind_param("i", $user_id);
+$stmt_user->execute();
+$stmt_user->bind_result($user_email);
+$stmt_user->fetch();
+$stmt_user->close();
 
-    if ($stmt->execute()) {
-        $notification_message = "Success! Your request is now approved. Status: Accepted";
-        $notification_status = "success";
-
-        // Admin notification
-        $admin_message = "A new blessing request was received and approved automatically by the system.";
-        $sql_admin_notification = "INSERT INTO admin_notifications (message, status) VALUES (?, 'unread')";
-        $stmt_admin_notification = $conn->prepare($sql_admin_notification);
-        $stmt_admin_notification->bind_param("s", $admin_message);
-        $stmt_admin_notification->execute();
-        $stmt_admin_notification->close();
-    } else {
+// Insert blessing request
+$sql = "INSERT INTO blessings_requests (user_id, name_of_blessed, priest_name, name_of_requestor, blessing_time, type_of_blessing, blessing_date, receipt_path, status) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+$stmt = $conn->prepare($sql);
+if ($stmt === false) {
+    if ($receipt_path !== null) {
         unlink($receipt_path);
-        error_log("Database error: " . $stmt->error);
-        $notification_message = "Error saving blessing request.";
-        $notification_status = "error";
     }
+    error_log("Database error: " . $conn->error);
+    $notification_message = "Database error while saving blessing request.";
+    $notification_status = "error";
+    goto save_notification;
+}
+
+$stmt->bind_param("issssssss", $user_id, $name_of_blessed, $priest_name, $name_of_requestor, $blessing_time_24, $type_of_blessing, $extracted_date, $receipt_path, $status);
+
+if ($stmt->execute()) {
+    $notification_message = "Success! Your request is now approved. Status: Accepted";
+    $notification_status = "success";
+
+    // Admin notification
+    $admin_message = "A new blessing request was received and approved automatically by the system.";
+    $sql_admin_notification = "INSERT INTO admin_notifications (message, status) VALUES (?, 'unread')";
+    $stmt_admin_notification = $conn->prepare($sql_admin_notification);
+    $stmt_admin_notification->bind_param("s", $admin_message);
+    $stmt_admin_notification->execute();
+    $stmt_admin_notification->close();
 } else {
-    $notification_message = "Failed to upload receipt.";
+    if ($receipt_path !== null) {
+        unlink($receipt_path);
+    }
+    error_log("Database error: " . $stmt->error);
+    $notification_message = "Error saving blessing request.";
     $notification_status = "error";
 }
 

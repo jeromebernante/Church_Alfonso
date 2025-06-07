@@ -65,10 +65,10 @@ if ($priest_unavailable) {
     exit();
 }
 
-$status = $date_exists ? "Pending" : "Accepted";
+$status = "Pending";
 
 // Upload receipt
-$target_dir = "uploads/";
+$target_dir = "Uploads/";
 if (!file_exists($target_dir)) {
     mkdir($target_dir, 0777, true);
 }
@@ -87,6 +87,9 @@ if (!move_uploaded_file($receipt["tmp_name"], $target_file)) {
     echo json_encode(["status" => "error", "message" => "Failed to upload receipt."]);
     exit();
 }
+
+// Include directory in receipt_name for database storage
+$receipt_path = $target_dir . $receipt_name;
 
 // Get user email
 $sql = "SELECT email FROM users WHERE id = ?";
@@ -107,7 +110,7 @@ $conn->begin_transaction();
 $sql = "INSERT INTO wedding_requests (user_id, bride_name, groom_name, priest_name, contact, wedding_date, payment_receipt, status) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("isssssss", $user_id, $bride_name, $groom_name, $priest_name, $contact, $wedding_date, $receipt_name, $status);
+$stmt->bind_param("isssssss", $user_id, $bride_name, $groom_name, $priest_name, $contact, $wedding_date, $receipt_path, $status);
 
 if ($stmt->execute()) {
     // Save user notification

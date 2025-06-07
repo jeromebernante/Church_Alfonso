@@ -598,7 +598,7 @@ include '../db_connection.php';
                             }
                         }
 
-                        $('#service-info').html('<strong>Selected Date:</strong> ' + selectedDate + '.<br><br><strong>Time: </strong>11:00 AM');
+                        $('#service-info').html('<strong>Selected Date:</strong> ' + selectedDate + '.<br><br><strong>Time: </strong>11:30 AM');
 
                         let timeSelect = $('#pamisa-time');
                         timeSelect.empty();
@@ -1008,8 +1008,9 @@ include '../db_connection.php';
 
 
             // Baptism Form submission
-            $('#baptism-form').submit(function(e) {
+            $('#baptism-form').off('submit').submit(function(e) {
                 e.preventDefault();
+                console.log("Form submitted");
                 $('#loading-spinner').css('display', 'flex');
 
                 let ninongsNinangs = [];
@@ -1031,7 +1032,7 @@ include '../db_connection.php';
                 let selectedDateMatch = $('#service-info').text().match(/\d{4}-\d{2}-\d{2}/);
                 let selectedDate = selectedDateMatch ? selectedDateMatch[0] : null;
 
-                // Basic client-side validation
+                // Client-side validation
                 if (!$('#baptized-name').val().trim()) {
                     $('#loading-spinner').hide();
                     Swal.fire("Error", "Please enter the name of the baptized person.", "error");
@@ -1065,131 +1066,41 @@ include '../db_connection.php';
                     type: 'POST',
                     data: JSON.stringify(data),
                     contentType: "application/json",
+                    dataType: "json", // Explicitly set jQuery to expect JSON and parse it
                     success: function(response) {
-                        console.log(response);
-                        
+                        console.log("Response received:", response);
                         $('#loading-spinner').hide();
-                        let res;
+                        let res = response; // Use response directly, as it's already parsed
                         let additionalNinongs = Math.max(0, ninongsNinangs.length - 2);
                         let totalAmount = 500 + (additionalNinongs * 30);
 
                         try {
-                            res = JSON.parse(response);
+                            console.log("Parsed response:", res);
                             if (res.status === "success") {
                                 $('#total-payment').text(`Total Amount: ₱${totalAmount}`);
                                 $('#baptism-payment-amount').text(`Total to Pay: ₱${totalAmount}`);
-
+                                console.log("Showing Swal...");
                                 Swal.fire({
                                     icon: "success",
                                     title: "Success",
                                     text: "Baptism request saved.",
-                                    allowOutsideClick: false
+                                    allowOutsideClick: false,
+                                    timer: 3000,
+                                    timerProgressBar: true
                                 }).then(() => {
-                                    console.log(response);
-                                    
+                                    console.log("Swal closed");
                                 });
                             } else {
                                 Swal.fire("Error", res.message, "error");
                             }
                         } catch (e) {
-                            console.log(e);
-                            
+                            console.log("Error processing response:", e);
+                            Swal.fire("Error", "Invalid server response. Please try again.", "error");
                         }
                     },
                     error: function(e) {
                         $('#loading-spinner').hide();
-                        Swal.fire("Oops...", "Something went wrong. Please try again!", "error");
-                        console.log(e);
-                        
-                    }
-                });
-            });
-
-            $('#proceed-payment-baptism').click(function() {
-                $('#payment-modal-baptism').fadeIn();
-            });
-
-            $('#close-modal-baptism').click(function() {
-                $('#payment-modal-baptism').fadeOut();
-            });
-
-            $('#proceed-payment').click(function() {
-                $('#payment-modal').fadeIn();
-            });
-
-            $('#close-modal').click(function() {
-                $('#payment-modal').fadeOut();
-            });
-
-            $('#submit-payment').click(function() {
-                let fileInput = $('#gcash-receipt')[0].files[0];
-                if (!fileInput) {
-                    Swal.fire("Error", "Please upload a GCash receipt.", "error");
-                    return;
-                }
-
-                let formData = new FormData();
-                formData.append('gcash_receipt', fileInput);
-
-                $('#loading-spinner').css('display', 'flex');
-
-                $.ajax({
-                    url: 'upload_payment.php',
-                    type: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    success: function(response) {
-                        $('#loading-spinner').hide();
-                        Swal.fire("Payment Submitted", "Your payment has been received. Please check your email.", "success");
-                    },
-                    error: function() {
-                        $('#loading-spinner').hide();
-                        Swal.fire("Oops...", "Something went wrong. Please try again!", "error");
-                    }
-                });
-            });
-
-            $('#submit-payment-baptism').click(function() {
-                let fileInput = $('#gcash-receipt-baptism')[0].files[0];
-                if (!fileInput) {
-                    Swal.fire("Error", "Please upload a GCash receipt for Baptism.", "error");
-                    return;
-                }
-
-                let formData = new FormData();
-                formData.append('gcash_receipt_baptism', fileInput);
-
-                $('#loading-spinner').css('display', 'flex');
-
-                $.ajax({
-                    url: 'upload_payment_baptism.php',
-                    type: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    success: function(response) {
-                        $('#loading-spinner').hide();
-
-                        try {
-                            let jsonResponse = JSON.parse(response);
-
-                            if (jsonResponse.status === "success") {
-                                Swal.fire("Payment Submitted", "Your Baptism payment has been received. Please check your email.", "success")
-                                    .then(() => {
-                                        $('#payment-modal-baptism').fadeOut();
-                                    });
-                            } else {
-                                Swal.fire("Error", jsonResponse.message, "error");
-                            }
-                        } catch (e) {
-                            console.log("Invalid JSON response:", response);
-                            Swal.fire("Error", "Invalid response from the server. Please contact support.", "error");
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        $('#loading-spinner').hide();
-                        console.error("AJAX Error:", error);
+                        console.log("AJAX error:", e);
                         Swal.fire("Oops...", "Something went wrong. Please try again!", "error");
                     }
                 });

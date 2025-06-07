@@ -745,7 +745,7 @@ $stmt_notif->close();
                             }
                         }
 
-                        $('#service-info').html('<strong>Selected Date:</strong> ' + selectedDate + '.<br><br><strong>Time: </strong>11:00 AM');
+                        $('#service-info').html('<strong>Selected Date:</strong> ' + selectedDate + '.<br><br><strong>Time: </strong>11:30 AM');
 
                         let timeSelect = $('#pamisa-time');
                         timeSelect.empty();
