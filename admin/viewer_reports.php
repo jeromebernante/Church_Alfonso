@@ -236,7 +236,7 @@ $conn->close();
             <select id="table" name="table"
                 style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
                 <option value="baptism_slots">Baptism Slots</option>
-                <option value="pamisa_requests">Pamisa Requests</option>
+                <option value="pamisa_requests">Mass Requests</option>
                 <option value="wedding_requests">Wedding Requests</option>
                 <option value="blessings_requests">Blessings Requests</option>
             </select>
@@ -316,10 +316,10 @@ $conn->close();
         <!-- Pamisa Requests -->
         <div class="section-container"
             style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); margin-bottom: 20px; font-family: Arial, sans-serif;">
-            <h3 style="margin-bottom: 10px;">Pamisa Requests</h3>
+            <h3 style="margin-bottom: 10px;">Mass Requests</h3>
             <button onclick="printTable('pamisaTable')"
                 style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; margin-bottom: 10px;">Print
-                Pamisa</button>
+                Mass</button>
 
             <div class="table-container" style="overflow-x: auto;">
                 <table id="pamisaTable" style="width: 100%; border-collapse: collapse;">

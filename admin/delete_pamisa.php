@@ -20,9 +20,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['requestId'])) {
         $stmtDelete->bind_param("i", $requestId);
 
         if ($stmtDelete->execute()) {
-            echo "Pamisa request deleted successfully.";
+            echo "Mass request deleted successfully.";
         } else {
-            echo "Error deleting pamisa request.";
+            echo "Error deleting mass request.";
         }
     } else {
         echo "Error: Record not found.";

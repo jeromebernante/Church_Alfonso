@@ -149,7 +149,7 @@ $stmt_notif->close();
             </div>
 
             <div class="services-buttons" style="flex: 0.3; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-                <button id="pamisa" class="service-btn">Pamisa</button>
+                <button id="pamisa" class="service-btn">Mass</button>
                 <button id="baptismBtn" class="service-btn">Baptism</button>
                 <button id="blessing" class="service-btn">Blessing</button>
                 <button id="wedding" class="service-btn">Wedding</button>
@@ -360,17 +360,15 @@ $stmt_notif->close();
                             <option value="10:00AM">10:00AM</option>
                         </select>
 
-                        <label for="name-of-intended" style="font-weight: bold; margin-bottom: 5px;">Pangalan ng
-                            Ipapamisa:</label>
+                        <label for="name-of-intended" style="font-weight: bold; margin-bottom: 5px;">Name of the Intended:</label>
                         <input type="text" id="name-of-intended" class="input-field" placeholder="Enter name" required
                             style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
 
-                        <label for="name-of-requestor" style="font-weight: bold; margin-bottom: 5px;">Pangalan ng
-                            Nagpamisa:</label>
+                        <label for="name-of-requestor" style="font-weight: bold; margin-bottom: 5px;">Name of the Requester:</label>
                         <input type="text" id="name-of-requestor" class="input-field" placeholder="Enter name" required
                             style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
 
-                        <label for="pamisa-type" style="font-weight: bold; margin-bottom: 5px;">Type of Pamisa:</label>
+                        <label for="pamisa-type" style="font-weight: bold; margin-bottom: 5px;">Type of Mass:</label>
                         <select id="pamisa-type" class="dropdown-field" required
                             style="width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
                             <option value="Thanksgiving">Thanksgiving</option>
@@ -399,7 +397,7 @@ $stmt_notif->close();
                         <button type="submit" id="save-pamisa" class="service-submit-btn" style="background-color: #4CAF50; color: white; border: none; padding: 12px 20px; 
                     font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; 
                     transition: background 0.3s ease-in-out; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);">
-                            Save Pamisa
+                            Save Mass
                         </button>
 
                     </form>
@@ -420,7 +418,7 @@ $stmt_notif->close();
                             style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
 
                         <div id="ninongNinangFields">
-                            <label for="ninong-ninang" style="font-weight: bold; margin-bottom: 5px;">Ninong and Ninang:</label>
+                            <label for="ninong-ninang" style="font-weight: bold; margin-bottom: 5px;">Godfather and Godmother:</label>
                             <input type="text" name="ninong_ninang[]" class="input-field" placeholder="First name, Last name" required
                                 style="width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
                             <input type="text" name="ninong_ninang[]" class="input-field" placeholder="First name, Last name" required
@@ -469,15 +467,13 @@ $stmt_notif->close();
                         </select>
 
                         <!-- Name of Blessed -->
-                        <label for="name-of-blessed" style="font-weight: bold; margin-bottom: 5px;">Pangalan ng
-                            Ipapabless:</label>
+                        <label for="name-of-blessed" style="font-weight: bold; margin-bottom: 5px;">Subject of the Blessing:</label>
                         <input type="text" id="name-of-blessed" name="name_of_blessed" class="input-field"
                             placeholder="Enter name" required
                             style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
 
                         <!-- Requestor Name -->
-                        <label for="name-of-requestor-blessing" style="font-weight: bold; margin-bottom: 5px;">Pangalan
-                            ng Nagpabless:</label>
+                        <label for="name-of-requestor-blessing" style="font-weight: bold; margin-bottom: 5px;">Name of the Requester:</label>
                         <input type="text" id="name-of-requestor-blessing" name="name_of_requestor" class="input-field"
                             placeholder="Enter name" required
                             style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">

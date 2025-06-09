@@ -183,7 +183,7 @@ $result_rates = $conn->query($sql_rates);
 <section class="dashboard-stats">
     <div class="stats-container">
         <div class="stat-box">
-            <h3>Your Total Request/s: Pamisa</h3>
+            <h3>Your Total Request/s: Mass</h3>
             <p><?php echo $requests['pamisa_requests']; ?></p>
         </div>
         <div class="stat-box">

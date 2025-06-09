@@ -17,9 +17,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['requestId'])) {
     $stmt->bind_param("sssdi", $nameOfIntended, $pamisaType, $selectedTime, $price, $requestId);
 
     if ($stmt->execute()) {
-        echo "Walk-in Pamisa details updated successfully.";
+        echo "Walk-in Mass details updated successfully.";
     } else {
-        echo "Error updating Walk-in Pamisa details: " . $stmt->error;
+        echo "Error updating Walk-in Mass details: " . $stmt->error;
         error_log("SQL Error: " . $stmt->error);
     }
 }

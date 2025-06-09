@@ -85,7 +85,7 @@ if ($stmt->execute()) {
         $notif_stmt->execute();
 
         // Save admin notification
-        $admin_notification_message = "A new payment for a Pamisa request has been received and approved.";
+        $admin_notification_message = "A new payment for a Mass request has been received and approved.";
         $sql_admin_notification = "INSERT INTO admin_notifications (message, status) VALUES (?, 'unread')";
         $stmt_admin_notification = $conn->prepare($sql_admin_notification);
         $stmt_admin_notification->bind_param("s", $admin_notification_message);
@@ -105,29 +105,29 @@ if ($stmt->execute()) {
             $mail->setFrom('parishoftheholycrossonline@gmail.com', 'Parish of the Holy Cross');
             $mail->addAddress($email, $name_of_requestor);
             $mail->isHTML(true);
-            $mail->Subject = "Pamisa Request Approved - Confirmation Email";
+            $mail->Subject = "Mass Request Approved - Confirmation Email";
         
             $mail->Body = "
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; background-color: #f9f9f9;'>
                 <div style='text-align: center; padding-bottom: 20px;'>
-                    <h2 style='color: #2c3e50;'>Pamisa Request Approved ✅</h2>
+                    <h2 style='color: #2c3e50;'>Mass Request Approved ✅</h2>
                     <p style='color: #16a085; font-size: 18px; font-weight: bold;'>Your request has been <span style='color: #27ae60;'>APPROVED</span>!</p>
                 </div>
         
                 <div style='background: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 5px rgba(0,0,0,0.1);'>
                     <p style='font-size: 16px; color: #333;'>Dear <strong>$name_of_requestor</strong>,</p>
-                    <p style='font-size: 16px; color: #555;'>We are pleased to inform you that your Pamisa request has been <strong>APPROVED</strong>. Below are the details:</p>
+                    <p style='font-size: 16px; color: #555;'>We are pleased to inform you that your Mass request has been <strong>APPROVED</strong>. Below are the details:</p>
         
                     <table style='width: 100%; border-collapse: collapse; margin-top: 10px;'>
                         <tr><td style='padding: 10px; font-weight: bold;'>Intended for:</td><td>$name_of_intended</td></tr>
-                        <tr><td style='padding: 10px; font-weight: bold;'>Pamisa Type:</td><td>$pamisa_type</td></tr>
+                        <tr><td style='padding: 10px; font-weight: bold;'>Mass Type:</td><td>$pamisa_type</td></tr>
                         <tr><td style='padding: 10px; font-weight: bold;'>Date:</td><td>$selected_date</td></tr>
                         <tr><td style='padding: 10px; font-weight: bold;'>Time:</td><td>$selected_time</td></tr>
                         <tr><td style='padding: 10px; font-weight: bold;'>Amount Paid:</td><td><strong>PHP 100 per name $price</strong></td></tr>
                     </table>
         
                     <p style='font-size: 16px; color: #555; margin-top: 15px;'>
-                        Your Pamisa has been scheduled as per the details above. Please arrive on time and bring any necessary documents if required.
+                        Your Mass has been scheduled as per the details above. Please arrive on time and bring any necessary documents if required.
                     </p>
         
                     <p style='text-align: center; margin-top: 20px; font-size: 16px; color: #333; font-weight: bold;'>

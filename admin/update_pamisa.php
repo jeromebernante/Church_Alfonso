@@ -14,9 +14,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['requestId'])) {
     $stmt->bind_param("sssisi", $nameOfIntended, $pamisaType, $selectedTime, $price, $status, $requestId);
 
     if ($stmt->execute()) {
-        echo "Pamisa details updated successfully.";
+        echo "Mass details updated successfully.";
     } else {
-        echo "Error updating pamisa details: " . $stmt->error;
+        echo "Error updating mass details: " . $stmt->error;
         error_log("SQL Error: " . $stmt->error);
     }
 }

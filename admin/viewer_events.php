@@ -288,7 +288,7 @@ include 'db_connection.php';
     </div>
 
     <!-- Pamisa -->
-    <h2 style="text-align: center;">Upcoming Pamisa Requests</h2>
+    <h2 style="text-align: center;">Upcoming Mass Requests</h2>
     <div id="pamisaContainer">
         <?php
         $query = "
@@ -311,13 +311,13 @@ include 'db_connection.php';
 
                 echo "<div class='pamisa-box' data-date='$pamisaDate' data-type='$type' onclick='fetchPamisaDetails(\"$requestId\", \"$type\", this)' style='border:1px solid #ccc; padding:15px; margin:10px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.1);'>";
                 echo "<h3>Requested by: $requestor</h3>";
-                echo "<p>Pamisa Date: " . date("F j, Y", strtotime($pamisaDate)) . "</p>";
+                echo "<p>Mass Date: " . date("F j, Y", strtotime($pamisaDate)) . "</p>";
                 echo "<p><b>Type:</b> $type</p>";
                 echo "<div class='details-container'></div>";
                 echo "</div>";
             }
         } else {
-            echo "<p>No upcoming Pamisa requests.</p>";
+            echo "<p>No upcoming Mass requests.</p>";
         }
         ?>
     </div>

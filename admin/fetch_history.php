@@ -118,13 +118,13 @@ include 'db_connection.php';
 
             echo "<div class='pamisa-box' data-type='$type' onclick='fetchPamisaDetails(\"$requestId\", \"$type\", this)'>";
             echo "<h3>Requested by: $requestor</h3>";
-            echo "<p>Pamisa Date: $pamisaDate</p>";
+            echo "<p>Mass Date: $pamisaDate</p>";
             echo "<p><b>Type:</b> $type</p>";
             echo "<div class='details-container'></div>";
             echo "</div>";
         }
     } else {
-        echo "<p>No past Pamisa requests.</p>";
+        echo "<p>No past Mass requests.</p>";
     }
     ?>
 </div>

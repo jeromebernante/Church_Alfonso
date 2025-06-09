@@ -175,7 +175,7 @@ $stmt->close();
 
     <div class="table-container">
         <center>
-            <h2>Pamisa Requests</h2>
+            <h2>Mass Requests</h2>
         </center>
         <?php if (count($history) > 0): ?>
             <table class="styled-table" id="historyTable">
@@ -185,7 +185,7 @@ $stmt->close();
                         <th>Request ID</th>
                         <th>Intended Name</th>
                         <th>Requestor Name</th>
-                        <th>Pamisa Type</th>
+                        <th>Mass Type</th>
                         <th>Date</th>
                         <th>Time</th>
                         <th>Price</th>
@@ -197,7 +197,7 @@ $stmt->close();
                 <tbody>
                     <?php foreach ($history as $row): ?>
                         <tr>
-                            <td>Pamisa</td>
+                            <td>Mass</td>
                             <td><?php echo htmlspecialchars($row['id']); ?></td>
                             <td><?php echo htmlspecialchars($row['name_of_intended']); ?></td>
                             <td><?php echo htmlspecialchars($row['name_of_requestor']); ?></td>
@@ -220,7 +220,7 @@ $stmt->close();
                 </tbody>
             </table>
         <?php else: ?>
-            <p>No Pamisa history found.</p>
+            <p>No Mass history found.</p>
         <?php endif; ?>
     </div>
 

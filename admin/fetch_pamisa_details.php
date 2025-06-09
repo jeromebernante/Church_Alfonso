@@ -20,13 +20,13 @@ if (isset($_POST['requestId']) && isset($_POST['type'])) {
         $updateUrl = ($type === "Online") ? "update_pamisa.php" : "update_pamisa.php";
 
         echo "<div class='pamisa-details'>";
-        echo "<h2>Pamisa Details</h2>";
+        echo "<h2>Mass Details</h2>";
 
         echo "<form id='editPamisaForm' method='POST' action='" . $updateUrl . "'>";
         echo "<input type='hidden' name='requestId' value='" . htmlspecialchars($row['id']) . "'>";
         echo "<p><strong>Name of Intended:</strong> <input type='text' name='name_of_intended' value='" . htmlspecialchars($row['name_of_intended']) . "' readonly></p>";
-        echo "<p><strong>Pamisa Type:</strong> <input type='text' name='pamisa_type' value='" . htmlspecialchars($row['pamisa_type']) . "' readonly></p>";
-        echo "<p><strong>Pamisa Time:</strong> <input type='text' name='selected_time' value='" . date("h:i A", strtotime($row['selected_time'])) . "' readonly></p>";
+        echo "<p><strong>Mass Type:</strong> <input type='text' name='pamisa_type' value='" . htmlspecialchars($row['pamisa_type']) . "' readonly></p>";
+        echo "<p><strong>Mass Time:</strong> <input type='text' name='selected_time' value='" . date("h:i A", strtotime($row['selected_time'])) . "' readonly></p>";
         echo "<p><strong>Price:</strong> ₱<input type='text' name='price' value='" . number_format($row['price'], 2) . "' readonly></p>";
         echo "<p><strong>Status:</strong> <select name='status'>";
         $options = ['Pending', 'Accepted'];
@@ -107,7 +107,7 @@ $(document).ready(function() {
 
         Swal.fire({
             title: "Are you sure?",
-            text: "This pamisa request will be permanently deleted.",
+            text: "This mass request will be permanently deleted.",
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#d33",
@@ -123,7 +123,7 @@ $(document).ready(function() {
                         Swal.fire({
                             icon: "success",
                             title: "Deleted!",
-                            text: "Pamisa request deleted successfully.",
+                            text: "Mass request deleted successfully.",
                             confirmButtonColor: "#4CAF50"
                         }).then(() => {
                             $(".pamisa-details").remove();

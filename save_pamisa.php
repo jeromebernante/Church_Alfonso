@@ -63,7 +63,7 @@ if (move_uploaded_file($receipt_file["tmp_name"], $receipt_path)) {
 
     if ($selected_date === $current_date && $selected_time_24 <= $current_time) {
         unlink($receipt_path); // Remove uploaded file if validation fails
-        echo json_encode(["status" => "error", "message" => "You cannot book a Pamisa for a time that has already started today."]);
+        echo json_encode(["status" => "error", "message" => "You cannot book a Mass for a time that has already started today."]);
         exit();
     }
 
@@ -100,18 +100,18 @@ if (move_uploaded_file($receipt_file["tmp_name"], $receipt_path)) {
     if ($stmt === false) {
         unlink($receipt_path); // Remove uploaded file if database error
         error_log("Database error: " . $conn->error);
-        $notification_message = "Database error while saving pamisa request.";
+        $notification_message = "Database error while saving mass request.";
         $notification_status = "error";
         goto save_notification;
     }
 
     $stmt->bind_param("isssssis", $user_id, $name_of_intended, $name_of_requestor, $pamisa_type, $selected_date, $selected_time, $price, $receipt_path);
     if ($stmt->execute()) {
-        $notification_message = "Pamisa request was successfully sent. Please wait for payment confirmation.";
+        $notification_message = "Mass request was successfully sent. Please wait for payment confirmation.";
         $notification_status = "success";
 
         // Admin notification
-        $admin_notification_message = "A new Pamisa request was received and is pending payment verification.";
+        $admin_notification_message = "A new Mass request was received and is pending payment verification.";
         $sql_admin_notification = "INSERT INTO admin_notifications (message, status) VALUES (?, 'unread')";
         $stmt_admin_notification = $conn->prepare($sql_admin_notification);
         $stmt_admin_notification->bind_param("s", $admin_notification_message);
@@ -132,19 +132,19 @@ if (move_uploaded_file($receipt_file["tmp_name"], $receipt_path)) {
             $mail->setFrom('parishoftheholycrossonline@gmail.com', 'Parish of the Holy Cross');
             $mail->addAddress($user_email);
             $mail->isHTML(true);
-            $mail->Subject = "Pamisa Request Received";
+            $mail->Subject = "Mass Request Received";
             $mail->Body = "
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; background-color: #f9f9f9;'>
                 <div style='text-align: center; padding-bottom: 20px;'>
-                    <h2 style='color: #2c3e50;'>Pamisa Request Confirmation</h2>
+                    <h2 style='color: #2c3e50;'>Mass Request Confirmation</h2>
                     <p style='color: #16a085; font-size: 18px; font-weight: bold;'>Your request is currently <span style='color: #e74c3c;'>PENDING</span></p>
                 </div>
                 <div style='background: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 5px rgba(0,0,0,0.1);'>
                     <p style='font-size: 16px; color: #333;'>Dear <strong>$name_of_requestor</strong>,</p>
-                    <p style='font-size: 16px; color: #555;'>Thank you for submitting a Pamisa request. Here are the details of your request:</p>
+                    <p style='font-size: 16px; color: #555;'>Thank you for submitting a Mass request. Here are the details of your request:</p>
                     <table style='width: 100%; border-collapse: collapse; margin-top: 10px;'>
                         <tr><td style='padding: 10px; font-weight: bold;'>Intended for:</td><td style='padding: 10px;'>$name_of_intended</td></tr>
-                        <tr><td style='padding: 10px; font-weight: bold;'>Pamisa Type:</td><td style='padding: 10px;'>$pamisa_type</td></tr>
+                        <tr><td style='padding: 10px; font-weight: bold;'>Mass Type:</td><td style='padding: 10px;'>$pamisa_type</td></tr>
                         <tr><td style='padding: 10px; font-weight: bold;'>Date:</td><td style='padding: 10px;'>$selected_date</td></tr>
                         <tr><td style='padding: 10px; font-weight: bold;'>Time:</td><td style='padding: 10px;'>$selected_time</td></tr>
                         <tr><td style='padding: 10px; font-weight: bold;'>Amount Due:</td><td style='padding: 10px; font-size: 18px; color: #e74c3c;'><strong>PHP $price per name</strong></td></tr>
@@ -156,13 +156,13 @@ if (move_uploaded_file($receipt_file["tmp_name"], $receipt_path)) {
             </div>";
             $mail->send();
         } catch (Exception $e) {
-            $notification_message = "Pamisa request saved, but email could not be sent.";
+            $notification_message = "Mass request saved, but email could not be sent.";
             $notification_status = "success";
             error_log("PHPMailer error: " . $e->getMessage());
         }
     } else {
         unlink($receipt_path); // Remove uploaded file if database insert fails
-        $notification_message = "Error saving pamisa request.";
+        $notification_message = "Error saving mass request.";
         $notification_status = "error";
         error_log("Database error: " . $stmt->error);
     }

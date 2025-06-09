@@ -130,7 +130,7 @@
             $('#calendar').fullCalendar('addEventSource', data);
         });
 
-        $('#service-info').html('<strong>Service:</strong> Pamisa<br>Please select a date.');
+        $('#service-info').html('<strong>Service:</strong> Mass<br>Please select a date.');
         $('#pamisa-form').show();
         $('#baptism-form').hide();
         $('#proceed-payment').hide();

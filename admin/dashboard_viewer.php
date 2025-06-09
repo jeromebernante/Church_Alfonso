@@ -117,7 +117,7 @@ $ratesDataJSON = json_encode($ratesData);
         <h2 style="color: black; font-size: 20px; margin-top: 15px;">Service Rates</h2>
         <p class="justified">
             The Service Rates section displays the pricing for different church services, such as <b>Baptism, Wedding,
-                Blessings, and Pamisa</b>. These rates help parishioners understand the associated costs before making a
+                Blessings, and Mass</b>. These rates help parishioners understand the associated costs before making a
             reservation.
         </p>
     </section>

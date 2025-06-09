@@ -14,6 +14,11 @@ function getDateRangeData($conn, $table, $date_column, $count_column, $start_dat
             FROM $table
             WHERE $date_column BETWEEN ? AND ?";
 
+    // For blessings_requests, only count rows with non-NULL receipt_path
+    if ($table === 'blessings_requests') {
+        $sql .= " AND receipt_path IS NOT NULL";
+    }
+
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("ss", $start_date, $end_date);
     $stmt->execute();
@@ -35,9 +40,13 @@ function getRequestDetails($conn, $table, $date_column, $start_date, $end_date)
     return $stmt->get_result();
 }
 
-$start_date = isset($_POST['start_date']) ? $_POST['start_date'] : null;
-$end_date = isset($_POST['end_date']) ? $_POST['end_date'] : null;
+// Set default date range to current month if not provided
+$current_year = date('Y');
+$current_month = date('m'); // e.g., '06' for June
+$start_date = isset($_POST['start_date']) ? $_POST['start_date'] : "$current_year-$current_month-01";
+$end_date = isset($_POST['end_date']) ? $_POST['end_date'] : date('Y-m-t'); // Last day of current month
 
+// Fetch data for the date range (default or user-selected)
 $range_data = null;
 if ($start_date && $end_date) {
     $baptism_data = getDateRangeData($conn, 'baptism_requests', 'selected_date', 'price', $start_date, $end_date);
@@ -59,24 +68,27 @@ if ($start_date && $end_date) {
     $blessings_details = getRequestDetails($conn, 'blessings_requests', 'blessing_date', $start_date, $end_date);
 }
 
-$total_earnings = array_sum(array_column($range_data ?? [], 'earnings'));
+// Calculate total earnings for the current month
+$total_earnings = $range_data['total_earnings'] ?? 0;
 
-$sql_baptism = "SELECT SUM(price) AS total_baptism_earnings FROM baptism_requests";
+// Calculate earnings for the current month
+$sql_baptism = "SELECT SUM(price) AS total_baptism_earnings FROM baptism_requests WHERE selected_date BETWEEN '$start_date' AND '$end_date'";
 $result_baptism = $conn->query($sql_baptism);
 $baptism_earnings = ($result_baptism->num_rows > 0) ? $result_baptism->fetch_assoc()['total_baptism_earnings'] : 0;
 
-$sql_pamisa = "SELECT SUM(price) AS total_pamisa_earnings FROM pamisa_requests";
+$sql_pamisa = "SELECT SUM(price) AS total_pamisa_earnings FROM pamisa_requests WHERE selected_date BETWEEN '$start_date' AND '$end_date'";
 $result_pamisa = $conn->query($sql_pamisa);
 $pamisa_earnings = ($result_pamisa->num_rows > 0) ? $result_pamisa->fetch_assoc()['total_pamisa_earnings'] : 0;
 
-$sql_wedding = "SELECT COUNT(payment_receipt) AS total_weddings FROM wedding_requests";
+$sql_wedding = "SELECT COUNT(payment_receipt) AS total_weddings FROM wedding_requests WHERE wedding_date BETWEEN '$start_date' AND '$end_date'";
 $result_wedding = $conn->query($sql_wedding);
 $wedding_earnings = ($result_wedding->num_rows > 0) ? $result_wedding->fetch_assoc()['total_weddings'] * 7000 : 0;
 
-$sql_blessings = "SELECT COUNT(receipt_path) AS total_blessings FROM blessings_requests";
+$sql_blessings = "SELECT COUNT(receipt_path) AS total_blessings FROM blessings_requests WHERE blessing_date BETWEEN '$start_date' AND '$end_date'";
 $result_blessings = $conn->query($sql_blessings);
 $blessings_earnings = ($result_blessings->num_rows > 0) ? $result_blessings->fetch_assoc()['total_blessings'] * 500 : 0;
 
+// Fetch other data (unchanged)
 $sql_baptism_slots = "SELECT date, slots_remaining FROM baptism_slots ORDER BY date ASC";
 $result_baptism_slots = $conn->query($sql_baptism_slots);
 
@@ -89,6 +101,7 @@ $result_wedding = $conn->query($sql_wedding);
 $sql_blessings = "SELECT blessing_date, name_of_blessed, type_of_blessing, status FROM blessings_requests ORDER BY blessing_date ASC";
 $result_blessings = $conn->query($sql_blessings);
 
+// Handle date filter form (unchanged)
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['filter_date']) && isset($_POST['table'])) {
     $filter_date = $_POST['filter_date'];
     $selected_table = $_POST['table'];
@@ -179,7 +192,7 @@ $conn->close();
     </section>
 
     <center>
-        <h2 style="color: black;">Earnings Overview</h2><br>
+        <h2 style="color: black;">Earnings Overview for <?php echo date('F'); ?></h2><br>
     </center>
 
     <center><button onclick="printEarnings()">Print Summary</button></center>
@@ -195,7 +208,7 @@ $conn->close();
                 <p>₱<?php echo number_format($baptism_earnings, 2); ?></p>
             </div>
             <div class="box">
-                <h3>Total Pamisa Earnings</h3>
+                <h3>Total Mass Earnings</h3>
                 <p>₱<?php echo number_format($pamisa_earnings, 2); ?></p>
             </div>
             <div class="box">
@@ -212,6 +225,9 @@ $conn->close();
         </center>
     </section>
 
+    <!-- Rest of the HTML remains unchanged -->
+    <!-- Include the existing scripts and other sections as they were -->
+
     <script>
         function printEarnings() {
             var printContent = document.body.innerHTML;
@@ -224,7 +240,7 @@ $conn->close();
             printWindow.document.write('.box { border: 1px solid black; padding: 10px; text-align: center; width: 200px; }');
             printWindow.document.write('</style>');
             printWindow.document.write('</head><body>');
-            printWindow.document.write('<h2 style="text-align: center;">Earnings Overview</h2>');
+            printWindow.document.write('<h2 style="text-align: center;">Earnings Overview for <?php echo date('F'); ?></h2>');
             printWindow.document.write(document.querySelector('.overview-summary').outerHTML);
             printWindow.document.write('</body></html>');
 
@@ -261,7 +277,7 @@ $conn->close();
                         <td>₱<?php echo number_format($range_data['baptism']['earnings'], 2); ?></td>
                     </tr>
                     <tr>
-                        <td>Pamisa</td>
+                        <td>Mass</td>
                         <td><?php echo $range_data['pamisa']['count']; ?></td>
                         <td>₱<?php echo number_format($range_data['pamisa']['earnings'], 2); ?></td>
                     </tr>
@@ -332,7 +348,7 @@ $conn->close();
                                     <?php endwhile; ?>
                                 </table>
                             </div>
-                            <h3>Pamisa Requests</h3>
+                            <h3>Mass Requests</h3>
                             <div class="table-wrapper">
                                 <table>
                                     <tr>
@@ -438,7 +454,7 @@ $conn->close();
         </div>
 
         <div class="section-container" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); margin-bottom: 20px; font-family: Arial, sans-serif;">
-            <h3 style="margin-bottom: 10px;">Pamisa Requests</h3>
+            <h3 style="margin-bottom: 10px;">Mass Requests</h3>
             <div class="table-container" style="overflow-x: auto;">
                 <table id="pamisaTable" style="width: 100%; border-collapse: collapse;">
                     <thead>
@@ -461,7 +477,7 @@ $conn->close();
                     </tbody>
                 </table>
             </div>
-            <button onclick="printTable('pamisaTable')" style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; margin-bottom: 10px;">Print Pamisa</button>
+            <button onclick="printTable('pamisaTable')" style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; margin-bottom: 10px;">Print Mass</button>
         </div>
 
         <div class="section-container" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); margin-bottom: 20px; font-family: Arial, sans-serif;">
