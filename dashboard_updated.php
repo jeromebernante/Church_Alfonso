@@ -109,7 +109,7 @@ $current_datetime = date("l, F j, Y g:i A");
             <input type="text" id="name-of-requestor" class="input-field" placeholder="Enter name" required 
                 style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
 
-            <label for="pamisa-type" style="font-weight: bold; margin-bottom: 5px;">Type of Mass:</label>
+            <label for="pamisa-type" style="font-weight: bold; margin-bottom: 5px;">Mass Intention:</label>
             <select id="pamisa-type" class="dropdown-field" required 
                 style="width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
                 <option value="Thanksgiving">Thanksgiving</option>

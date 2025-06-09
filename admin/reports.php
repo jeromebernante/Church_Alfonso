@@ -14,7 +14,6 @@ function getDateRangeData($conn, $table, $date_column, $count_column, $start_dat
             FROM $table
             WHERE $date_column BETWEEN ? AND ?";
 
-    // For blessings_requests, only count rows with non-NULL receipt_path
     if ($table === 'blessings_requests') {
         $sql .= " AND receipt_path IS NOT NULL";
     }
@@ -40,53 +39,57 @@ function getRequestDetails($conn, $table, $date_column, $start_date, $end_date)
     return $stmt->get_result();
 }
 
-// Set default date range to current month if not provided
+// Set current month date range for overview-summary
 $current_year = date('Y');
-$current_month = date('m'); // e.g., '06' for June
-$start_date = isset($_POST['start_date']) ? $_POST['start_date'] : "$current_year-$current_month-01";
-$end_date = isset($_POST['end_date']) ? $_POST['end_date'] : date('Y-m-t'); // Last day of current month
+$current_month = date('m');
+$current_month_start = "$current_year-$current_month-01";
+$current_month_end = date('Y-m-t'); // Last day of current month
 
-// Fetch data for the date range (default or user-selected)
+// Calculate earnings for the current month (overview-summary)
+$baptism_data = getDateRangeData($conn, 'baptism_requests', 'selected_date', 'price', $current_month_start, $current_month_end);
+$pamisa_data = getDateRangeData($conn, 'pamisa_requests', 'selected_date', 'price', $current_month_start, $current_month_end);
+$wedding_data = getDateRangeData($conn, 'wedding_requests', 'wedding_date', 'id', $current_month_start, $current_month_end, 7000);
+$blessings_data = getDateRangeData($conn, 'blessings_requests', 'blessing_date', 'id', $current_month_start, $current_month_end, 500);
+
+$total_earnings = $baptism_data['earnings'] + $pamisa_data['earnings'] + $wedding_data['earnings'] + $blessings_data['earnings'];
+$baptism_earnings = $baptism_data['earnings'];
+$pamisa_earnings = $pamisa_data['earnings'];
+$wedding_earnings = $wedding_data['earnings'];
+$blessings_earnings = $blessings_data['earnings'];
+
+// Process earnings-section date range only if form is submitted
 $range_data = null;
-if ($start_date && $end_date) {
-    $baptism_data = getDateRangeData($conn, 'baptism_requests', 'selected_date', 'price', $start_date, $end_date);
-    $pamisa_data = getDateRangeData($conn, 'pamisa_requests', 'selected_date', 'price', $start_date, $end_date);
-    $wedding_data = getDateRangeData($conn, 'wedding_requests', 'wedding_date', 'id', $start_date, $end_date, 7000);
-    $blessings_data = getDateRangeData($conn, 'blessings_requests', 'blessing_date', 'id', $start_date, $end_date, 500);
+$start_date = null;
+$end_date = null;
+$baptism_details = null;
+$pamisa_details = null;
+$wedding_details = null;
+$blessings_details = null;
 
-    $range_data = [
-        'baptism' => $baptism_data,
-        'pamisa' => $pamisa_data,
-        'wedding' => $wedding_data,
-        'blessings' => $blessings_data,
-        'total_earnings' => $baptism_data['earnings'] + $pamisa_data['earnings'] + $wedding_data['earnings'] + $blessings_data['earnings']
-    ];
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['start_date']) && isset($_POST['end_date'])) {
+    $start_date = $_POST['start_date'];
+    $end_date = $_POST['end_date'];
 
-    $baptism_details = getRequestDetails($conn, 'baptism_requests', 'selected_date', $start_date, $end_date);
-    $pamisa_details = getRequestDetails($conn, 'pamisa_requests', 'selected_date', $start_date, $end_date);
-    $wedding_details = getRequestDetails($conn, 'wedding_requests', 'wedding_date', $start_date, $end_date);
-    $blessings_details = getRequestDetails($conn, 'blessings_requests', 'blessing_date', $start_date, $end_date);
+    if ($start_date && $end_date) {
+        $baptism_data = getDateRangeData($conn, 'baptism_requests', 'selected_date', 'price', $start_date, $end_date);
+        $pamisa_data = getDateRangeData($conn, 'pamisa_requests', 'selected_date', 'price', $start_date, $end_date);
+        $wedding_data = getDateRangeData($conn, 'wedding_requests', 'wedding_date', 'id', $start_date, $end_date, 7000);
+        $blessings_data = getDateRangeData($conn, 'blessings_requests', 'blessing_date', 'id', $start_date, $end_date, 500);
+
+        $range_data = [
+            'baptism' => $baptism_data,
+            'pamisa' => $pamisa_data,
+            'wedding' => $wedding_data,
+            'blessings' => $blessings_data,
+            'total_earnings' => $baptism_data['earnings'] + $pamisa_data['earnings'] + $wedding_data['earnings'] + $blessings_data['earnings']
+        ];
+
+        $baptism_details = getRequestDetails($conn, 'baptism_requests', 'selected_date', $start_date, $end_date);
+        $pamisa_details = getRequestDetails($conn, 'pamisa_requests', 'selected_date', $start_date, $end_date);
+        $wedding_details = getRequestDetails($conn, 'wedding_requests', 'wedding_date', $start_date, $end_date);
+        $blessings_details = getRequestDetails($conn, 'blessings_requests', 'blessing_date', $start_date, $end_date);
+    }
 }
-
-// Calculate total earnings for the current month
-$total_earnings = $range_data['total_earnings'] ?? 0;
-
-// Calculate earnings for the current month
-$sql_baptism = "SELECT SUM(price) AS total_baptism_earnings FROM baptism_requests WHERE selected_date BETWEEN '$start_date' AND '$end_date'";
-$result_baptism = $conn->query($sql_baptism);
-$baptism_earnings = ($result_baptism->num_rows > 0) ? $result_baptism->fetch_assoc()['total_baptism_earnings'] : 0;
-
-$sql_pamisa = "SELECT SUM(price) AS total_pamisa_earnings FROM pamisa_requests WHERE selected_date BETWEEN '$start_date' AND '$end_date'";
-$result_pamisa = $conn->query($sql_pamisa);
-$pamisa_earnings = ($result_pamisa->num_rows > 0) ? $result_pamisa->fetch_assoc()['total_pamisa_earnings'] : 0;
-
-$sql_wedding = "SELECT COUNT(payment_receipt) AS total_weddings FROM wedding_requests WHERE wedding_date BETWEEN '$start_date' AND '$end_date'";
-$result_wedding = $conn->query($sql_wedding);
-$wedding_earnings = ($result_wedding->num_rows > 0) ? $result_wedding->fetch_assoc()['total_weddings'] * 7000 : 0;
-
-$sql_blessings = "SELECT COUNT(receipt_path) AS total_blessings FROM blessings_requests WHERE blessing_date BETWEEN '$start_date' AND '$end_date'";
-$result_blessings = $conn->query($sql_blessings);
-$blessings_earnings = ($result_blessings->num_rows > 0) ? $result_blessings->fetch_assoc()['total_blessings'] * 500 : 0;
 
 // Fetch other data (unchanged)
 $sql_baptism_slots = "SELECT date, slots_remaining FROM baptism_slots ORDER BY date ASC";
@@ -101,7 +104,7 @@ $result_wedding = $conn->query($sql_wedding);
 $sql_blessings = "SELECT blessing_date, name_of_blessed, type_of_blessing, status FROM blessings_requests ORDER BY blessing_date ASC";
 $result_blessings = $conn->query($sql_blessings);
 
-// Handle date filter form (unchanged)
+// Handle date filter form for other tables (unchanged)
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['filter_date']) && isset($_POST['table'])) {
     $filter_date = $_POST['filter_date'];
     $selected_table = $_POST['table'];
@@ -191,42 +194,41 @@ $conn->close();
         </p>
     </section>
 
-    <center>
-        <h2 style="color: black;">Earnings Overview for <?php echo date('F'); ?></h2><br>
-    </center>
-
-    <center><button onclick="printEarnings()">Print Summary</button></center>
-
-    <section class="overview-summary">
-        <div class="overview-boxes">
-            <div class="box">
-                <h3>All Total Earnings</h3>
-                <p>₱<?php echo number_format($total_earnings, 2); ?></p>
-            </div>
-            <div class="box">
-                <h3>Total Baptism Earnings</h3>
-                <p>₱<?php echo number_format($baptism_earnings, 2); ?></p>
-            </div>
-            <div class="box">
-                <h3>Total Mass Earnings</h3>
-                <p>₱<?php echo number_format($pamisa_earnings, 2); ?></p>
-            </div>
-            <div class="box">
-                <h3>Total Wedding Earnings</h3>
-                <p>₱<?php echo number_format($wedding_earnings, 2); ?></p>
-            </div>
-            <div class="box">
-                <h3>Total Blessings Earnings</h3>
-                <p>₱<?php echo number_format($blessings_earnings, 2); ?></p>
-            </div>
-        </div>
-        <center style="margin-top: 100px;">
-            <p style="margin-top: 10px; margin-bottom: 1rem; color: black; font-weight: bold;">Select Dates to Print Events and Earnings</p>
+    <div id="earningsOverViewThisMonth">
+        <center>
+            <h2 style="color: black;">Earnings Overview for <?php echo date('F'); ?></h2><br>
         </center>
-    </section>
 
-    <!-- Rest of the HTML remains unchanged -->
-    <!-- Include the existing scripts and other sections as they were -->
+        <center><button onclick="printEarnings()">Print Summary</button></center>
+
+        <section class="overview-summary">
+            <div class="overview-boxes">
+                <div class="box">
+                    <h3>All Total Earnings</h3>
+                    <p>₱<?php echo number_format($total_earnings, 2); ?></p>
+                </div>
+                <div class="box">
+                    <h3>Total Baptism Earnings</h3>
+                    <p>₱<?php echo number_format($baptism_earnings, 2); ?></p>
+                </div>
+                <div class="box">
+                    <h3>Total Mass Earnings</h3>
+                    <p>₱<?php echo number_format($pamisa_earnings, 2); ?></p>
+                </div>
+                <div class="box">
+                    <h3>Total Wedding Earnings</h3>
+                    <p>₱<?php echo number_format($wedding_earnings, 2); ?></p>
+                </div>
+                <div class="box">
+                    <h3>Total Blessings Earnings</h3>
+                    <p>₱<?php echo number_format($blessings_earnings, 2); ?></p>
+                </div>
+            </div>
+            <center style="margin-top: 100px;">
+                <p style="margin-top: 10px; margin-bottom: 1rem; color: black; font-weight: bold;">Select Dates to Print Events and Earnings</p>
+            </center>
+        </section>
+    </div>
 
     <script>
         function printEarnings() {
@@ -249,13 +251,13 @@ $conn->close();
         }
     </script>
 
-    <section class="earnings-section">
+    <section id="selectDatesToPrintEventsAndEarnings" class="earnings-section">
         <form method="POST" style="display: flex; align-items: center; gap: 10px; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); font-family: Arial, sans-serif; width: max-content; margin: auto;">
             <label for="start_date" style="font-weight: bold; font-size: 14px;">From:</label>
-            <input type="date" name="start_date" id="start_date" value="<?php echo $start_date ?? ''; ?>" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;" required>
+            <input type="date" name="start_date" id="start_date" value="<?php echo htmlspecialchars($start_date ?? ''); ?>" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;" required>
 
             <label for="end_date" style="font-weight: bold; font-size: 14px;">To:</label>
-            <input type="date" name="end_date" id="end_date" value="<?php echo $end_date ?? ''; ?>" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;" required>
+            <input type="date" name="end_date" id="end_date" value="<?php echo htmlspecialchars($end_date ?? ''); ?>" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;" required>
 
             <button type="submit" style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer;">
                 Filter
@@ -468,20 +470,29 @@ $conn->close();
                     <tbody>
                         <?php while ($row = $result_pamisa->fetch_assoc()): ?>
                             <tr style="text-align: center;">
-                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['selected_date']; ?></td>
-                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['name_of_intended']; ?></td>
-                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['pamisa_type']; ?></td>
-                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['status']; ?></td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">
+                                    <?php echo $row['selected_date']; ?>
+                                </td>
+                                <td style="padding: 10px; border: 1px solid #ddd;"> <?php echo $row['name_of_intended']; ?> </td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">
+                                    <?php echo $row['pamisa_type']; ?>
+                                </td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">
+                                    <?php echo $row['status']; ?>
+                                </td>
                             </tr>
                         <?php endwhile; ?>
                     </tbody>
                 </table>
             </div>
-            <button onclick="printTable('pamisaTable')" style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; margin-bottom: 10px;">Print Mass</button>
+            <button onclick="printTable('pamisaTable')" style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; margin-bottom: 10px;">
+                Print Mass
+            </button>
         </div>
 
-        <div class="section-container" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); margin-bottom: 20px; font-family: Arial, sans-serif;">
-            <h3 style="margin-bottom: 10px;">Wedding Requests</h3>
+        <div class="section-container" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; font-family: Arial, sans-serif;">
+            <h3 style="margin-bottom: 10px;">
+                Wedding Requests</h3>
             <div class="table-container" style="overflow-x: auto;">
                 <table id="weddingTable" style="width: 100%; border-collapse: collapse;">
                     <thead>
@@ -495,19 +506,29 @@ $conn->close();
                     <tbody>
                         <?php while ($row = $result_wedding->fetch_assoc()): ?>
                             <tr style="text-align: center;">
-                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['wedding_date']; ?></td>
-                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['bride_name']; ?></td>
-                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['groom_name']; ?></td>
-                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['status']; ?></td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">
+                                    <?php echo $row['wedding_date']; ?>
+                                </td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">
+                                    <?php echo $row['bride_name']; ?>
+                                </td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">
+                                    <?php echo $row['groom_name']; ?>
+                                </td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">
+                                    <?php echo $row['status']; ?>
+                                </td>
                             </tr>
                         <?php endwhile; ?>
                     </tbody>
                 </table>
             </div>
-            <button onclick="printTable('weddingTable')" style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; margin-bottom: 10px;">Print Wedding</button>
+            <button onclick="printTable('weddingTable')" style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; margin-bottom: 10px;">
+                Print Wedding
+            </button>
         </div>
 
-        <div class="section-container" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); margin-bottom: 20px; font-family: Arial, sans-serif;">
+        <div class="section-container" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; font-family: Arial, sans-serif;">
             <h3 style="margin-bottom: 10px;">Blessings Requests</h3>
             <div class="table-container" style="overflow-x: auto;">
                 <table id="blessingsTable" style="width: 100%; border-collapse: collapse;">
@@ -522,16 +543,26 @@ $conn->close();
                     <tbody>
                         <?php while ($row = $result_blessings->fetch_assoc()): ?>
                             <tr style="text-align: center;">
-                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['blessing_date']; ?></td>
-                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['name_of_blessed']; ?></td>
-                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['type_of_blessing']; ?></td>
-                                <td style="padding: 10px; border: 1px solid #ddd;"><?php echo $row['status']; ?></td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">
+                                    <?php echo $row['blessing_date']; ?>
+                                </td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">
+                                    <?php echo $row['name_of_blessed']; ?>
+                                </td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">
+                                    <?php echo $row['type_of_blessing']; ?>
+                                </td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">
+                                    <?php echo $row['status']; ?>
+                                </td>
                             </tr>
                         <?php endwhile; ?>
                     </tbody>
                 </table>
             </div>
-            <button onclick="printTable('blessingsTable')" style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; margin-bottom: 10px;">Print Blessings</button>
+            <button onclick="printTable('blessingsTable')" style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; margin-bottom: 10px;">
+                Print Blessings
+            </button>
         </div>
 
         <script>
@@ -592,12 +623,12 @@ $conn->close();
             <div class="footer-contact">
                 <h3>Contact Us</h3>
                 <p>Email: holycrossparish127@yahoo.com</p>
-                <p>Phone: 28671581</p>
-                <p>Address: Gen. T. De Leon, Valenzuela, Philippines, 1442 </p>
+                <p>Phone: 28671588581</p>
+                <p>Address: Gen. T. de Leon, Valenzuela, Philippines, 1442 </p>
             </div>
             <div class="footer-socials">
                 <h3>Follow Us</h3>
-                <a href="https://www.facebook.com/ParishoftheHolyCrossValenzuelaCityOfficial/">Facebook</a>
+                <a href="http://www.facebook.com/ParishoftheHolyCrossValenzuelaCityOfficial/">Facebook</a>
             </div>
         </div>
         <div class="footer-bottom">
@@ -606,7 +637,7 @@ $conn->close();
     </footer>
 
     <script>
-        <?php if (!empty($alertMessage)) echo $alertMessage; ?>
+        <?php if (!empty($alertMessage)) echo ($alertMessage); ?>
 
         function updateDateTime() {
             let now = new Date();
@@ -762,7 +793,7 @@ $conn->close();
         td {
             padding: 10px;
             text-align: center;
-            border: 1px solid black;
+            border: 1px solid #ddd;
         }
     </style>
 </body>

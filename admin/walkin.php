@@ -81,7 +81,7 @@ include '../db_connection.php';
             </div>
 
             <div class="services-buttons" style="flex: 0.3; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-                <button id="pamisa" class="service-btn">Mass</button>
+                <button id="pamisa" class="service-btn">Mass Intended</button>
                 <button id="baptismBtn" class="service-btn">Baptism</button>
                 <button id="blessing" class="service-btn">Blessing</button>
                 <button id="wedding" class="service-btn">Wedding</button>
@@ -236,7 +236,7 @@ include '../db_connection.php';
                         <input type="text" id="name-of-requestor" class="input-field" placeholder="Enter name" required
                             style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
 
-                        <label for="pamisa-type" style="font-weight: bold; margin-bottom: 5px;">Type of Mass:</label>
+                        <label for="pamisa-type" style="font-weight: bold; margin-bottom: 5px;">Mass Intention:</label>
                         <select id="pamisa-type" class="dropdown-field" required
                             style="width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
                             <option value="Thanksgiving">Thanksgiving</option>
