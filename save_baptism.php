@@ -17,19 +17,20 @@ if (!isset($_SESSION['user_id'])) {
 
 $data = json_decode(file_get_contents("php://input"), true);
 
-if (!$data || empty($data['baptized_name']) || empty($data['parents_name']) || empty($data['ninongs_ninangs']) || empty($data['selected_date'])) {
+if (!$data || empty($data['baptized_name']) || empty($data['ninongs_ninangs']) || empty($data['selected_date'])) {
     echo json_encode(["status" => "error", "message" => "Invalid or incomplete data."]);
     exit();
 }
 
 $user_id = $_SESSION['user_id'];
 $baptized_name = trim($data['baptized_name']);
-$parents_name = json_encode($data['parents_name']); // Store as JSON since it's an array
+// Check if parents_name is empty or null, and set to NULL if so
+$parents_name = !empty($data['parents_name']) && is_array($data['parents_name']) ? json_encode($data['parents_name']) : null;
 $ninongs_ninangs = json_encode($data['ninongs_ninangs']);
 $selected_date = $data['selected_date'];
 
 // Validate input lengths
-if (strlen($baptized_name) > 255 || count($data['parents_name']) > 2 || count($data['ninongs_ninangs']) < 2) {
+if (strlen($baptized_name) > 255 || (isset($data['parents_name']) && count($data['parents_name']) > 2) || count($data['ninongs_ninangs']) < 2) {
     echo json_encode(["status" => "error", "message" => "Invalid input lengths."]);
     exit();
 }
@@ -147,6 +148,8 @@ if ($stmt->execute()) {
 
         $mail->isHTML(true);
         $mail->Subject = 'Baptism Request Confirmation';
+        // Adjust email content to handle NULL parents_name
+        $parents_name_display = $parents_name ? implode(", ", json_decode($parents_name, true)) : "Not provided";
         $mail->Body = "
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; background-color: #f9f9f9;'>
                 <div style='text-align: center; padding-bottom: 20px;'>
@@ -155,7 +158,7 @@ if ($stmt->execute()) {
                 </div>
         
                 <div style='background: #ffffff; padding: 15px; border-radius: 8px; box-shadow: 0px 2px 5px rgba(0,0,0,0.1);'>
-                    <p style='font-size: 16px; color: #333;'>Dear <strong>" . implode(", ", json_decode($parents_name, true)) . "</strong>,</p>
+                    <p style='font-size: 16px; color: #333;'>Dear <strong>$parents_name_display</strong>,</p>
                     <p style='font-size: 16px; color: #555;'>Thank you for submitting a Baptism request. Here are the details of your request:</p>
         
                     <table style='width: 100%; border-collapse: collapse; margin-top: 10px;'>
@@ -165,7 +168,7 @@ if ($stmt->execute()) {
                         </tr>
                         <tr>
                             <td style='padding: 10px; font-weight: bold; color: #2c3e50;'>Parents' Names:</td>
-                            <td style='padding: 10px; color: #34495e;'>" . implode(", ", json_decode($parents_name, true)) . "</td>
+                            <td style='padding: 10px; color: #34495e;'>$parents_name_display</td>
                         </tr>
                         <tr>
                             <td style='padding: 10px; font-weight: bold; color: #2c3e50;'>Ninongs & Ninangs:</td>

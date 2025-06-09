@@ -23,6 +23,31 @@ $stmt->close();
 
 date_default_timezone_set('Asia/Manila');
 $current_datetime = date("l, F j, Y g:i A");
+$current_day = date('l');
+// if ($current_day === 'Monday') {
+//     echo '
+//     <style>
+//         body {
+//             background-color: white !important;
+//             overflow: hidden;
+//         }
+//     </style>
+//     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+//     <script>
+//         document.addEventListener("DOMContentLoaded", function() {
+//             Swal.fire({
+//                 icon: "info",
+//                 title: "Scheduling Closed",
+//                 text: "Scheduling is not available on Mondays. Please come back another day.",
+//                 confirmButtonText: "OK"
+//             }).then(() => {
+//                 window.location.href = "front.php"; // You can change this if needed
+//             });
+//         });
+//     </script>
+//     ';
+//     exit();
+// }
 
 
 $sql_notif = "SELECT COUNT(*) FROM notifications WHERE user_id = ? AND status = 'success'";
@@ -388,10 +413,10 @@ $stmt_notif->close();
                         <label style="font-weight: bold; margin-bottom: 5px;">Parents:</label>
                         <br><br>
                         <label for="father-name" style="font-weight: bold; margin-bottom: 5px;">Name of Father:</label>
-                        <input type="text" id="father-name" name="parents_name[]" class="input-field" placeholder="Father First name, Last name" required
+                        <input type="text" id="father-name" name="parents_name[]" class="input-field" placeholder="Father First name, Last name"
                             style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
                         <label for="mother-name" style="font-weight: bold; margin-bottom: 5px;">Name of Mother:</label>
-                        <input type="text" id="mother-name" name="parents_name[]" class="input-field" placeholder="Mother first name, last name" required
+                        <input type="text" id="mother-name" name="parents_name[]" class="input-field" placeholder="Mother first name, last name"
                             style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
 
                         <div id="ninongNinangFields">
@@ -778,7 +803,6 @@ $stmt_notif->close();
             });
 
 
-
             function renderPamisaCalendar() {
                 $('#calendar').fullCalendar({
                     selectable: true,
@@ -792,12 +816,27 @@ $stmt_notif->close();
                     events: [],
 
                     dayRender: function(date, cell) {
+                        // Clear any existing styles and content
                         cell.css('background-color', '');
                         cell.find('div').remove();
+
+                        // Apply red background color (F08080) to past dates
+                        if (moment(date).isBefore(moment(), 'day')) {
+                            cell.css('background-color', '#F08080');
+                            cell.append('<br><div style="color: white; font-size: 20px; text-align: center; font-weight: bold;">Ended</div>');
+                        }
                     },
 
                     select: function(start, end) {
                         let selectedDate = start.format('YYYY-MM-DD');
+
+                        // Check if the selected date is in the past
+                        if (moment(selectedDate).isBefore(moment(), 'day')) {
+                            Swal.fire("Invalid Selection", "Pamisa for past dates are no longer available.", "error");
+                            $('#calendar').fullCalendar('unselect');
+                            return;
+                        }
+
                         let selectedDay = moment(selectedDate).format('dddd');
 
                         let events = $('#calendar').fullCalendar('clientEvents', function(event) {
@@ -815,7 +854,6 @@ $stmt_notif->close();
                         };
 
                         let availableTimes = timeOptions[selectedDay] || [];
-
 
                         $('#service-info').html('<strong>Selected Date:</strong> ' + selectedDate + '.<br>');
 
@@ -876,12 +914,27 @@ $stmt_notif->close();
                             'border-color': event.borderColor || '#ff0000',
                             'color': event.textColor || '#ffffff'
                         });
-
-
                     },
                     dayRender: function(date, cell) {
-                        if (date.day() === 5 || date.day() === 6) {
-                            cell.css('background-color', '#fcfcfc');
+                        if (date.day() === 5 || date.day() === 6) { // Friday or Saturday
+                            if (date.isBefore(moment(), 'day')) { // Past Fridays or Saturdays
+                                cell.css('background-color', '#F08080'); // Red background
+                                cell.append('<br><div style="color: white; font-size: 20px; text-align: center; font-weight: bold;">Ended</div>');
+                                cell.addClass('fully-booked'); // Prevent selection
+                            } else { // Future Fridays or Saturdays
+                                cell.css('background-color', '#7ea67b'); // Green background
+                                $.getJSON('fetch_slots.php', {
+                                    date: date.format('YYYY-MM-DD'),
+                                    service: 'blessing'
+                                }, function(data) {
+                                    if (data.slots_remaining > 0) {
+                                        cell.append(`<br><div style="color: white; font-size: 20px; text-align: center; font-weight: bold;">${data.slots_remaining} SLOTS REMAINING</div>`);
+                                    }
+                                    if (data.slots_remaining <= 0) {
+                                        cell.addClass('fully-booked');
+                                    }
+                                });
+                            }
                         } else {
                             cell.css('background-color', '#F08080');
                             cell.append('<br><div style="color: white; font-size: 13px; text-align: center; font-weight: bold;">Not Allowed for Blessings</div>');
@@ -893,6 +946,12 @@ $stmt_notif->close();
 
                         if (!(start.day() === 5 || start.day() === 6)) {
                             Swal.fire("Invalid Selection", "Blessings can only be scheduled on Fridays and Saturdays.", "error");
+                            $('#calendar').fullCalendar('unselect');
+                            return;
+                        }
+
+                        if (moment(selectedDate).isBefore(moment(), 'day')) {
+                            Swal.fire("Invalid Selection", "Blessing bookings for past dates are no longer available.", "error");
                             $('#calendar').fullCalendar('unselect');
                             return;
                         }
@@ -1203,11 +1262,6 @@ $stmt_notif->close();
                     Swal.fire("Error", "Please enter the name of the baptized person.", "error");
                     return;
                 }
-                if (parentsNames.length < 2) {
-                    $('#loading-spinner').hide();
-                    Swal.fire("Error", "Please enter both father and mother names.", "error");
-                    return;
-                }
                 if (ninongsNinangs.length < 2) {
                     $('#loading-spinner').hide();
                     Swal.fire("Error", "Please enter at least two Ninong/Ninang names.", "error");
@@ -1221,7 +1275,7 @@ $stmt_notif->close();
 
                 let data = {
                     baptized_name: $('#baptized-name').val().trim(),
-                    parents_name: parentsNames,
+                    parents_name: parentsNames, // Can be empty array, will be handled as NULL in PHP
                     ninongs_ninangs: ninongsNinangs,
                     selected_date: selectedDate
                 };
