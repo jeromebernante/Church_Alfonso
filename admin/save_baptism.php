@@ -6,18 +6,18 @@ header('Content-Type: application/json');
 
 $data = json_decode(file_get_contents("php://input"), true);
 
-if (!$data || empty($data['baptized_name']) || empty($data['parents_name']) || empty($data['ninongs_ninangs']) || empty($data['selected_date'])) {
+if (!$data || empty($data['baptized_name']) || empty($data['ninongs_ninangs']) || empty($data['selected_date'])) {
     echo json_encode(["status" => "error", "message" => "Invalid or incomplete data."]);
     exit();
 }
 
 $baptized_name = trim($data['baptized_name']);
-$parents_name = json_encode($data['parents_name']);
+$parents_name = !empty($data['parents_name']) ? json_encode($data['parents_name']) : null;
 $ninongs_ninangs = json_encode($data['ninongs_ninangs']);
 $selected_date = $data['selected_date'];
 
 // Validate input lengths
-if (strlen($baptized_name) > 255 || count($data['parents_name']) > 2 || count($data['ninongs_ninangs']) < 2) {
+if (strlen($baptized_name) > 255 || (!is_null($parents_name) && count($data['parents_name']) > 2) || count($data['ninongs_ninangs']) < 2) {
     echo json_encode(["status" => "error", "message" => "Invalid input lengths."]);
     exit();
 }

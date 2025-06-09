@@ -266,10 +266,10 @@ include '../db_connection.php';
                         <label style="font-weight: bold; margin-bottom: 5px;">Parents:</label>
                         <br><br>
                         <label for="father-name" style="font-weight: bold; margin-bottom: 5px;">Name of Father:</label>
-                        <input type="text" id="father-name" name="parents_name[]" class="input-field" placeholder="Father First name, Last name" required
+                        <input type="text" id="father-name" name="parents_name[]" class="input-field" placeholder="Father First name, Last name"
                             style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
                         <label for="mother-name" style="font-weight: bold; margin-bottom: 5px;">Name of Mother:</label>
-                        <input type="text" id="mother-name" name="parents_name[]" class="input-field" placeholder="Mother first name, last name" required
+                        <input type="text" id="mother-name" name="parents_name[]" class="input-field" placeholder="Mother first name, last name"
                             style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
 
                         <div id="ninongNinangFields">
@@ -292,6 +292,7 @@ include '../db_connection.php';
                             Save Baptism
                         </button>
                     </form>
+
 
                     <!-- Blessing Form -->
                     <form id="blessing-form" style="display: none; margin-top: 20px;">
@@ -645,12 +646,27 @@ include '../db_connection.php';
                     events: [],
 
                     dayRender: function(date, cell) {
+                        // Clear any existing styles and content
                         cell.css('background-color', '');
                         cell.find('div').remove();
+
+                        // Apply red background color (F08080) to past dates
+                        if (moment(date).isBefore(moment(), 'day')) {
+                            cell.css('background-color', '#F08080');
+                            cell.append('<br><div style="color: white; font-size: 20px; text-align: center; font-weight: bold;">Ended</div>');
+                        }
                     },
 
                     select: function(start, end) {
                         let selectedDate = start.format('YYYY-MM-DD');
+
+                        // Check if the selected date is in the past
+                        if (moment(selectedDate).isBefore(moment(), 'day')) {
+                            Swal.fire("Invalid Selection", "Pamisa for past dates are no longer available.", "error");
+                            $('#calendar').fullCalendar('unselect');
+                            return;
+                        }
+
                         let selectedDay = moment(selectedDate).format('dddd');
 
                         let events = $('#calendar').fullCalendar('clientEvents', function(event) {
@@ -668,7 +684,6 @@ include '../db_connection.php';
                         };
 
                         let availableTimes = timeOptions[selectedDay] || [];
-
 
                         $('#service-info').html('<strong>Selected Date:</strong> ' + selectedDate + '.<br>');
 
@@ -729,12 +744,27 @@ include '../db_connection.php';
                             'border-color': event.borderColor || '#ff0000',
                             'color': event.textColor || '#ffffff'
                         });
-
-
                     },
                     dayRender: function(date, cell) {
-                        if (date.day() === 5 || date.day() === 6) {
-                            cell.css('background-color', '#fcfcfc');
+                        if (date.day() === 5 || date.day() === 6) { // Friday or Saturday
+                            if (date.isBefore(moment(), 'day')) { // Past Fridays or Saturdays
+                                cell.css('background-color', '#F08080'); // Red background
+                                cell.append('<br><div style="color: white; font-size: 20px; text-align: center; font-weight: bold;">Ended</div>');
+                                cell.addClass('fully-booked'); // Prevent selection
+                            } else { // Future Fridays or Saturdays
+                                cell.css('background-color', '#7ea67b'); // Green background
+                                $.getJSON('fetch_slots.php', {
+                                    date: date.format('YYYY-MM-DD'),
+                                    service: 'blessing'
+                                }, function(data) {
+                                    if (data.slots_remaining > 0) {
+                                        cell.append(`<br><div style="color: white; font-size: 20px; text-align: center; font-weight: bold;">${data.slots_remaining} SLOTS REMAINING</div>`);
+                                    }
+                                    if (data.slots_remaining <= 0) {
+                                        cell.addClass('fully-booked');
+                                    }
+                                });
+                            }
                         } else {
                             cell.css('background-color', '#F08080');
                             cell.append('<br><div style="color: white; font-size: 13px; text-align: center; font-weight: bold;">Not Allowed for Blessings</div>');
@@ -746,6 +776,12 @@ include '../db_connection.php';
 
                         if (!(start.day() === 5 || start.day() === 6)) {
                             Swal.fire("Invalid Selection", "Blessings can only be scheduled on Fridays and Saturdays.", "error");
+                            $('#calendar').fullCalendar('unselect');
+                            return;
+                        }
+
+                        if (moment(selectedDate).isBefore(moment(), 'day')) {
+                            Swal.fire("Invalid Selection", "Blessing bookings for past dates are no longer available.", "error");
                             $('#calendar').fullCalendar('unselect');
                             return;
                         }
@@ -1008,9 +1044,8 @@ include '../db_connection.php';
 
 
             // Baptism Form submission
-            $('#baptism-form').off('submit').submit(function(e) {
+            $('#baptism-form').submit(function(e) {
                 e.preventDefault();
-                console.log("Form submitted");
                 $('#loading-spinner').css('display', 'flex');
 
                 let ninongsNinangs = [];
@@ -1032,15 +1067,10 @@ include '../db_connection.php';
                 let selectedDateMatch = $('#service-info').text().match(/\d{4}-\d{2}-\d{2}/);
                 let selectedDate = selectedDateMatch ? selectedDateMatch[0] : null;
 
-                // Client-side validation
+                // Basic client-side validation
                 if (!$('#baptized-name').val().trim()) {
                     $('#loading-spinner').hide();
                     Swal.fire("Error", "Please enter the name of the baptized person.", "error");
-                    return;
-                }
-                if (parentsNames.length < 2) {
-                    $('#loading-spinner').hide();
-                    Swal.fire("Error", "Please enter both father and mother names.", "error");
                     return;
                 }
                 if (ninongsNinangs.length < 2) {
@@ -1056,7 +1086,7 @@ include '../db_connection.php';
 
                 let data = {
                     baptized_name: $('#baptized-name').val().trim(),
-                    parents_name: parentsNames,
+                    parents_name: parentsNames, // Can be empty array, will be handled as NULL in PHP
                     ninongs_ninangs: ninongsNinangs,
                     selected_date: selectedDate
                 };
@@ -1066,41 +1096,45 @@ include '../db_connection.php';
                     type: 'POST',
                     data: JSON.stringify(data),
                     contentType: "application/json",
-                    dataType: "json", // Explicitly set jQuery to expect JSON and parse it
                     success: function(response) {
-                        console.log("Response received:", response);
                         $('#loading-spinner').hide();
-                        let res = response; // Use response directly, as it's already parsed
+                        let res;
                         let additionalNinongs = Math.max(0, ninongsNinangs.length - 2);
                         let totalAmount = 500 + (additionalNinongs * 30);
 
                         try {
-                            console.log("Parsed response:", res);
+                            res = JSON.parse(response);
                             if (res.status === "success") {
                                 $('#total-payment').text(`Total Amount: ₱${totalAmount}`);
                                 $('#baptism-payment-amount').text(`Total to Pay: ₱${totalAmount}`);
-                                console.log("Showing Swal...");
+
                                 Swal.fire({
                                     icon: "success",
                                     title: "Success",
-                                    text: "Baptism request saved.",
-                                    allowOutsideClick: false,
-                                    timer: 3000,
-                                    timerProgressBar: true
+                                    text: "Baptism request saved. Please proceed to payment.",
+                                    allowOutsideClick: false
                                 }).then(() => {
-                                    console.log("Swal closed");
+                                    $('#payment-modal-baptism').fadeIn();
                                 });
                             } else {
                                 Swal.fire("Error", res.message, "error");
                             }
                         } catch (e) {
-                            console.log("Error processing response:", e);
-                            Swal.fire("Error", "Invalid server response. Please try again.", "error");
+                            $('#total-payment').text(`Total Amount: ₱${totalAmount}`);
+                            $('#baptism-payment-amount').text(`Total to Pay: ₱${totalAmount}`);
+
+                            Swal.fire({
+                                icon: "success",
+                                title: "Success",
+                                text: "Baptism request saved. Please proceed to payment.",
+                                allowOutsideClick: false
+                            }).then(() => {
+                                $('#payment-modal-baptism').fadeIn();
+                            });
                         }
                     },
-                    error: function(e) {
+                    error: function() {
                         $('#loading-spinner').hide();
-                        console.log("AJAX error:", e);
                         Swal.fire("Oops...", "Something went wrong. Please try again!", "error");
                     }
                 });
