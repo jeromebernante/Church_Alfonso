@@ -81,7 +81,7 @@ include '../db_connection.php';
             </div>
 
             <div class="services-buttons" style="flex: 0.3; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-                <button id="pamisa" class="service-btn">Mass Intended</button>
+                <button id="pamisa" class="service-btn">Mass Intention</button>
                 <button id="baptismBtn" class="service-btn">Baptism</button>
                 <button id="blessing" class="service-btn">Blessing</button>
                 <button id="wedding" class="service-btn">Wedding</button>
