@@ -228,11 +228,11 @@ include '../db_connection.php';
                             <option value="10:00AM">10:00AM</option>
                         </select>
 
-                        <label for="name-of-intended" style="font-weight: bold; margin-bottom: 5px;">Name of the Intended:</label>
+                        <label for="name-of-intended" style="font-weight: bold; margin-bottom: 5px;">Mass offered for:</label>
                         <input type="text" id="name-of-intended" class="input-field" placeholder="Enter name" required
                             style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
 
-                        <label for="name-of-requestor" style="font-weight: bold; margin-bottom: 5px;">Name of the Requester:</label>
+                        <label for="name-of-requestor" style="font-weight: bold; margin-bottom: 5px;">Mass requested by:</label>
                         <input type="text" id="name-of-requestor" class="input-field" placeholder="Enter name" required
                             style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px;">
 

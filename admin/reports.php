@@ -39,17 +39,71 @@ function getRequestDetails($conn, $table, $date_column, $start_date, $end_date)
     return $stmt->get_result();
 }
 
-// Set current month date range for overview-summary
-$current_year = date('Y');
-$current_month = date('m');
-$current_month_start = "$current_year-$current_month-01";
-$current_month_end = date('Y-m-t'); // Last day of current month
+// Initialize filter state
+$filter_type = $_SESSION['filter_type'] ?? 'month';
+$start_date = $_SESSION['start_date'] ?? null;
+$end_date = $_SESSION['end_date'] ?? null;
+$filter_month = $_SESSION['filter_month'] ?? date('m');
+$filter_year = $_SESSION['filter_year'] ?? date('Y');
+$filter_year_only = $_SESSION['filter_year_only'] ?? date('Y');
+$overview_title = "Earnings Overview for " . date('F Y');
 
-// Calculate earnings for the current month (overview-summary)
-$baptism_data = getDateRangeData($conn, 'baptism_requests', 'selected_date', 'price', $current_month_start, $current_month_end);
-$pamisa_data = getDateRangeData($conn, 'pamisa_requests', 'selected_date', 'price', $current_month_start, $current_month_end);
-$wedding_data = getDateRangeData($conn, 'wedding_requests', 'wedding_date', 'id', $current_month_start, $current_month_end, 7000);
-$blessings_data = getDateRangeData($conn, 'blessings_requests', 'blessing_date', 'id', $current_month_start, $current_month_end, 500);
+// Set date range based on filter
+if ($filter_type === 'month') {
+    $start_date = "$filter_year-$filter_month-01";
+    $end_date = date('Y-m-t', strtotime("$filter_year-$filter_month-01"));
+    $overview_title = "Earnings Overview for " . date('F Y', strtotime("$filter_year-$filter_month-01"));
+} elseif ($filter_type === 'year') {
+    $start_date = "$filter_year_only-01-01";
+    $end_date = "$filter_year_only-12-31";
+    $overview_title = "Earnings Overview for $filter_year_only";
+} elseif ($filter_type === 'date_range' && $start_date && $end_date) {
+    $start_date_formatted = date('F j, Y', strtotime($start_date));
+    $end_date_formatted = date('F j, Y', strtotime($end_date));
+    $overview_title = "Earnings Overview for $start_date_formatted to $end_date_formatted";
+}
+
+// Process filter form submission
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Reset all session variables
+    unset($_SESSION['filter_type'], $_SESSION['start_date'], $_SESSION['end_date'], 
+          $_SESSION['filter_month'], $_SESSION['filter_year'], $_SESSION['filter_year_only']);
+
+    if (isset($_POST['filter_type'])) {
+        $filter_type = $_POST['filter_type'];
+        $_SESSION['filter_type'] = $filter_type;
+
+        if ($filter_type === 'date_range' && isset($_POST['start_date']) && isset($_POST['end_date'])) {
+            $start_date = $_POST['start_date'];
+            $end_date = $_POST['end_date'];
+            $_SESSION['start_date'] = $start_date;
+            $_SESSION['end_date'] = $end_date;
+            $start_date_formatted = date('F j, Y', strtotime($start_date));
+            $end_date_formatted = date('F j, Y', strtotime($end_date));
+            $overview_title = "Earnings Overview for $start_date_formatted to $end_date_formatted";
+        } elseif ($filter_type === 'month' && isset($_POST['filter_month']) && isset($_POST['filter_year'])) {
+            $filter_month = $_POST['filter_month'];
+            $filter_year = $_POST['filter_year'];
+            $_SESSION['filter_month'] = $filter_month;
+            $_SESSION['filter_year'] = $filter_year;
+            $start_date = "$filter_year-$filter_month-01";
+            $end_date = date('Y-m-t', strtotime("$filter_year-$filter_month-01"));
+            $overview_title = "Earnings Overview for " . date('F Y', strtotime("$filter_year-$filter_month-01"));
+        } elseif ($filter_type === 'year' && isset($_POST['filter_year_only'])) {
+            $filter_year_only = $_POST['filter_year_only'];
+            $_SESSION['filter_year_only'] = $filter_year_only;
+            $start_date = "$filter_year_only-01-01";
+            $end_date = "$filter_year_only-12-31";
+            $overview_title = "Earnings Overview for $filter_year_only";
+        }
+    }
+}
+
+// Calculate earnings for the selected period
+$baptism_data = getDateRangeData($conn, 'baptism_requests', 'selected_date', 'price', $start_date, $end_date);
+$pamisa_data = getDateRangeData($conn, 'pamisa_requests', 'selected_date', 'price', $start_date, $end_date);
+$wedding_data = getDateRangeData($conn, 'wedding_requests', 'wedding_date', 'id', $start_date, $end_date, 7000);
+$blessings_data = getDateRangeData($conn, 'blessings_requests', 'blessing_date', 'id', $start_date, $end_date, 500);
 
 $total_earnings = $baptism_data['earnings'] + $pamisa_data['earnings'] + $wedding_data['earnings'] + $blessings_data['earnings'];
 $baptism_earnings = $baptism_data['earnings'];
@@ -57,41 +111,20 @@ $pamisa_earnings = $pamisa_data['earnings'];
 $wedding_earnings = $wedding_data['earnings'];
 $blessings_earnings = $blessings_data['earnings'];
 
-// Process earnings-section date range only if form is submitted
-$range_data = null;
-$start_date = null;
-$end_date = null;
-$baptism_details = null;
-$pamisa_details = null;
-$wedding_details = null;
-$blessings_details = null;
+$range_data = [
+    'baptism' => $baptism_data,
+    'pamisa' => $pamisa_data,
+    'wedding' => $wedding_data,
+    'blessings' => $blessings_data,
+    'total_earnings' => $total_earnings
+];
 
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['start_date']) && isset($_POST['end_date'])) {
-    $start_date = $_POST['start_date'];
-    $end_date = $_POST['end_date'];
+$baptism_details = getRequestDetails($conn, 'baptism_requests', 'selected_date', $start_date, $end_date);
+$pamisa_details = getRequestDetails($conn, 'pamisa_requests', 'selected_date', $start_date, $end_date);
+$wedding_details = getRequestDetails($conn, 'wedding_requests', 'wedding_date', $start_date, $end_date);
+$blessings_details = getRequestDetails($conn, 'blessings_requests', 'blessing_date', $start_date, $end_date);
 
-    if ($start_date && $end_date) {
-        $baptism_data = getDateRangeData($conn, 'baptism_requests', 'selected_date', 'price', $start_date, $end_date);
-        $pamisa_data = getDateRangeData($conn, 'pamisa_requests', 'selected_date', 'price', $start_date, $end_date);
-        $wedding_data = getDateRangeData($conn, 'wedding_requests', 'wedding_date', 'id', $start_date, $end_date, 7000);
-        $blessings_data = getDateRangeData($conn, 'blessings_requests', 'blessing_date', 'id', $start_date, $end_date, 500);
-
-        $range_data = [
-            'baptism' => $baptism_data,
-            'pamisa' => $pamisa_data,
-            'wedding' => $wedding_data,
-            'blessings' => $blessings_data,
-            'total_earnings' => $baptism_data['earnings'] + $pamisa_data['earnings'] + $wedding_data['earnings'] + $blessings_data['earnings']
-        ];
-
-        $baptism_details = getRequestDetails($conn, 'baptism_requests', 'selected_date', $start_date, $end_date);
-        $pamisa_details = getRequestDetails($conn, 'pamisa_requests', 'selected_date', $start_date, $end_date);
-        $wedding_details = getRequestDetails($conn, 'wedding_requests', 'wedding_date', $start_date, $end_date);
-        $blessings_details = getRequestDetails($conn, 'blessings_requests', 'blessing_date', $start_date, $end_date);
-    }
-}
-
-// Fetch other data (unchanged)
+// Fetch other data
 $sql_baptism_slots = "SELECT date, slots_remaining FROM baptism_slots ORDER BY date ASC";
 $result_baptism_slots = $conn->query($sql_baptism_slots);
 
@@ -104,7 +137,7 @@ $result_wedding = $conn->query($sql_wedding);
 $sql_blessings = "SELECT blessing_date, name_of_blessed, type_of_blessing, status FROM blessings_requests ORDER BY blessing_date ASC";
 $result_blessings = $conn->query($sql_blessings);
 
-// Handle date filter form for other tables (unchanged)
+// Handle date filter form for other tables
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['filter_date']) && isset($_POST['table'])) {
     $filter_date = $_POST['filter_date'];
     $selected_table = $_POST['table'];
@@ -196,7 +229,7 @@ $conn->close();
 
     <div id="earningsOverViewThisMonth">
         <center>
-            <h2 style="color: black;">Earnings Overview for <?php echo date('F'); ?></h2><br>
+            <h2 style="color: black;"><?php echo $overview_title; ?></h2><br>
         </center>
 
         <center><button onclick="printEarnings()">Print Summary</button></center>
@@ -225,7 +258,7 @@ $conn->close();
                 </div>
             </div>
             <center style="margin-top: 100px;">
-                <p style="margin-top: 10px; margin-bottom: 1rem; color: black; font-weight: bold;">Select Dates to Print Events and Earnings</p>
+                <p style="margin-top: 10px; margin-bottom: 1rem; color: black; font-weight: bold;">Select Filter to Print Events and Earnings</p>
             </center>
         </section>
     </div>
@@ -242,7 +275,7 @@ $conn->close();
             printWindow.document.write('.box { border: 1px solid black; padding: 10px; text-align: center; width: 200px; }');
             printWindow.document.write('</style>');
             printWindow.document.write('</head><body>');
-            printWindow.document.write('<h2 style="text-align: center;">Earnings Overview for <?php echo date('F'); ?></h2>');
+            printWindow.document.write('<h2 style="text-align: center;"><?php echo $overview_title; ?></h2>');
             printWindow.document.write(document.querySelector('.overview-summary').outerHTML);
             printWindow.document.write('</body></html>');
 
@@ -252,18 +285,59 @@ $conn->close();
     </script>
 
     <section id="selectDatesToPrintEventsAndEarnings" class="earnings-section">
-        <form method="POST" style="display: flex; align-items: center; gap: 10px; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); font-family: Arial, sans-serif; width: max-content; margin: auto;">
-            <label for="start_date" style="font-weight: bold; font-size: 14px;">From:</label>
-            <input type="date" name="start_date" id="start_date" value="<?php echo htmlspecialchars($start_date ?? ''); ?>" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;" required>
+        <form method="POST" style="background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); font-family: Arial, sans-serif; width: max-content; margin: auto;">
+            <div style="margin-bottom: 15px;">
+                <label style="font-weight: bold; font-size: 14px; margin-right: 10px;">Filter Type:</label>
+                <select name="filter_type" id="filter_type" onchange="toggleFilterFields()" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                    <option value="date_range" <?php echo $filter_type === 'date_range' ? 'selected' : ''; ?>>Date Range</option>
+                    <option value="month" <?php echo $filter_type === 'month' ? 'selected' : ''; ?>>Month and Year</option>
+                    <option value="year" <?php echo $filter_type === 'year' ? 'selected' : ''; ?>>Year Only</option>
+                </select>
+            </div>
 
-            <label for="end_date" style="font-weight: bold; font-size: 14px;">To:</label>
-            <input type="date" name="end_date" id="end_date" value="<?php echo htmlspecialchars($end_date ?? ''); ?>" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;" required>
+            <div id="date_range_fields" style="display: <?php echo $filter_type === 'date_range' ? 'flex' : 'none'; ?>; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <label for="start_date" style="font-weight: bold; font-size: 14px;">From:</label>
+                <input type="date" name="start_date" id="start_date" value="<?php echo htmlspecialchars($start_date ?? ''); ?>" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+
+                <label for="end_date" style="font-weight: bold; font-size: 14px;">To:</label>
+                <input type="date" name="end_date" id="end_date" value="<?php echo htmlspecialchars($end_date ?? ''); ?>" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+            </div>
+
+            <div id="month_year_fields" style="display: <?php echo $filter_type === 'month' ? 'flex' : 'none'; ?>; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <label for="filter_month" style="font-weight: bold; font-size: 14px;">Month:</label>
+                <select name="filter_month" id="filter_month" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                    <?php
+                    for ($m = 1; $m <= 12; $m++) {
+                        $month_name = date('F', mktime(0, 0, 0, $m, 1));
+                        $selected = $filter_month == sprintf("%02d", $m) ? 'selected' : '';
+                        echo "<option value='" . sprintf("%02d", $m) . "' $selected>$month_name</option>";
+                    }
+                    ?>
+                </select>
+
+                <label for="filter_year" style="font-weight: bold; font-size: 14px;">Year:</label>
+                <input type="number" name="filter_year" id="filter_year" value="<?php echo htmlspecialchars($filter_year); ?>" min="2000" max="2099" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; width: 80px;">
+            </div>
+
+            <div id="year_only_fields" style="display: <?php echo $filter_type === 'year' ? 'flex' : 'none'; ?>; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <label for="filter_year_only" style="font-weight: bold; font-size: 14px;">Year:</label>
+                <input type="number" name="filter_year_only" id="filter_year_only" value="<?php echo htmlspecialchars($filter_year_only); ?>" min="2000" max="2099" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; width: 80px;">
+            </div>
 
             <button type="submit" style="padding: 8px 15px; background-color: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; font-size: 14px; cursor: pointer;">
                 Filter
             </button>
         </form>
         <br>
+
+        <script>
+            function toggleFilterFields() {
+                const filterType = document.getElementById('filter_type').value;
+                document.getElementById('date_range_fields').style.display = filterType === 'date_range' ? 'flex' : 'none';
+                document.getElementById('month_year_fields').style.display = filterType === 'month' ? 'flex' : 'none';
+                document.getElementById('year_only_fields').style.display = filterType === 'year' ? 'flex' : 'none';
+            }
+        </script>
 
         <?php if ($range_data): ?>
             <div class="table-container">
@@ -327,7 +401,7 @@ $conn->close();
                         <body>
                             <h1>PARISH OF THE HOLY CROSS</h1>
                             <p>4009 Gen. T. de Leon, Valenzuela City, 1442 Metro Manila</p>
-                            <h2>Earnings Report for <?php echo "$start_date to $end_date"; ?></h2>
+                            <h2><?php echo $overview_title; ?></h2>
                             <h3>Baptism Requests</h3>
                             <div class="table-wrapper">
                                 <table>
@@ -416,7 +490,7 @@ $conn->close();
                                     <?php endwhile; ?>
                                 </table>
                             </div>
-                            <h3>Summary of Earnings Report for <?php echo "$start_date to $end_date"; ?></h3>
+                            <h3>Summary of Earnings Report for <?php echo $overview_title; ?></h3>
                             <div class="table-wrapper">
                                 ${printContents}
                             </div>
@@ -729,7 +803,7 @@ $conn->close();
         .box {
             background-color: #2c3e50;
             color: white;
-            border-radius: 15px;
+            border-radius: 10px;
             padding: 25px;
             width: 300px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -769,8 +843,7 @@ $conn->close();
         .admin-greeting {
             text-align: center;
             font-size: 35px;
-            font-weight: bold;
-            color: rgb(88, 177, 90);
+            color: rgb(68, 157, 0);
         }
 
         body {

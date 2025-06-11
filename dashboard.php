@@ -211,7 +211,7 @@ $result_rates = $conn->query($sql_rates);
         </tr>
         <?php while ($row = $result_rates->fetch_assoc()): ?>
             <tr>
-                <td><?php echo htmlspecialchars($row['service_name']); ?></td>
+                <td><?php echo htmlspecialchars($row['service_name'] === 'Pamisa' ? 'Mass' : $row['service_name']); ?></td>
                 <td>
                     <?php 
                         echo ($row['rate'] !== null) ? "₱" . number_format($row['rate'], 2) : "Donation"; 
